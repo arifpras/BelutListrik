@@ -1,0 +1,6 @@
+"0",""
+"0","("
+"0","  belutlistrik_343 <- belutlistrik_options %>%"
+"0","    select(formid, form343, Understat_Name) %>%"
+"0","    right_join(for343, by = ""formid"")"
+"0",")"

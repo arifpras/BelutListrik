@@ -1,0 +1,1 @@
+"0","(gk_choice <- db03d %>% filter(id_gk == 48) %>% mutate(""position"" = ""GK""))"

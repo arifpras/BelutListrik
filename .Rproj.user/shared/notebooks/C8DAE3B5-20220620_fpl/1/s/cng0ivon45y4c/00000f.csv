@@ -1,0 +1,13 @@
+"0","id_dict <- ""https://raw.githubusercontent.com/arifpras/Fantasy-Premier-League/master/data/2021-22/id_dict.csv"""
+"0",""
+"0","db00a <- readr::read_csv(id_dict)"
+"1","
+[36m──[39m [1mColumn specification[22m [36m─────────────────────────────────────────────────────────────────[39m
+cols(
+  Understat_ID = [32mcol_double()[39m,
+  FPL_ID = [32mcol_double()[39m,
+  Understat_Name = [31mcol_character()[39m,
+  FPL_Name = [31mcol_character()[39m
+)
+
+"

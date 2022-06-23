@@ -1,0 +1,8 @@
+"0","("
+"0","  db01c <- db01b %>% "
+"0","  left_join(db00a %>% select(Understat_ID, Understat_Name), by = c(""Understat_ID"")) %>% "
+"0","  select(-name) %>% "
+"0","  relocate("
+"0","    Understat_Name, position, team"
+"0","  )"
+"0",")"

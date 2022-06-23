@@ -1,0 +1,5 @@
+"0","# Removes all items in Environment!"
+"0","rm(list = ls())"
+"0","ls()"
+"1","character(0)
+"

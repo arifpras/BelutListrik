@@ -1,0 +1,54 @@
+"0","player_udrstat_2021 <- ""https://raw.githubusercontent.com/arifpras/Fantasy-Premier-League/master/data/2020-21/understat/understat_player.csv"""
+"0",""
+"0","player_udrstat_2122 <- ""https://raw.githubusercontent.com/arifpras/Fantasy-Premier-League/master/data/2021-22/understat/understat_player.csv"""
+"0",""
+"0","db00b <- read_csv(player_udrstat_2021)"
+"1","
+[36m──[39m [1mColumn specification[22m [36m─────────────────────────────────────────────────────────────────[39m
+cols(
+  id = [32mcol_double()[39m,
+  player_name = [31mcol_character()[39m,
+  games = [32mcol_double()[39m,
+  time = [32mcol_double()[39m,
+  goals = [32mcol_double()[39m,
+  xG = [32mcol_double()[39m,
+  assists = [32mcol_double()[39m,
+  xA = [32mcol_double()[39m,
+  shots = [32mcol_double()[39m,
+  key_passes = [32mcol_double()[39m,
+  yellow_cards = [32mcol_double()[39m,
+  red_cards = [32mcol_double()[39m,
+  position = [31mcol_character()[39m,
+  team_title = [31mcol_character()[39m,
+  npg = [32mcol_double()[39m,
+  npxG = [32mcol_double()[39m,
+  xGChain = [32mcol_double()[39m,
+  xGBuildup = [32mcol_double()[39m
+)
+
+"
+"0","db00c <- read_csv(player_udrstat_2122)"
+"1","
+[36m──[39m [1mColumn specification[22m [36m─────────────────────────────────────────────────────────────────[39m
+cols(
+  id = [32mcol_double()[39m,
+  player_name = [31mcol_character()[39m,
+  games = [32mcol_double()[39m,
+  time = [32mcol_double()[39m,
+  goals = [32mcol_double()[39m,
+  xG = [32mcol_double()[39m,
+  assists = [32mcol_double()[39m,
+  xA = [32mcol_double()[39m,
+  shots = [32mcol_double()[39m,
+  key_passes = [32mcol_double()[39m,
+  yellow_cards = [32mcol_double()[39m,
+  red_cards = [32mcol_double()[39m,
+  position = [31mcol_character()[39m,
+  team_title = [31mcol_character()[39m,
+  npg = [32mcol_double()[39m,
+  npxG = [32mcol_double()[39m,
+  xGChain = [32mcol_double()[39m,
+  xGBuildup = [32mcol_double()[39m
+)
+
+"

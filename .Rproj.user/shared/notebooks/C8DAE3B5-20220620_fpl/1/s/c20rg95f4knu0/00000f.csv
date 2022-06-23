@@ -1,0 +1,1 @@
+"0","(def_choice <- db04d %>% filter(id_def == 13289) %>% mutate(""position"" = ""DEF""))"

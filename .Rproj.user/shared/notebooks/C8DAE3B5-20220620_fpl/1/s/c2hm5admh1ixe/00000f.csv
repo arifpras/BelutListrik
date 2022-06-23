@@ -1,0 +1,20 @@
+"0","#season 2020/2021"
+"0","db00f <- db00d %>%"
+"0","  left_join(db00a, by = c(""name"" = ""FPL_Name"")) %>%"
+"0","  na.omit() %>%"
+"0","  mutate(kickoff_time_adj = as.Date(kickoff_time, ""%Y-%m-%d""))"
+"2","Warning:"
+"2"," Problem with `mutate()` column `kickoff_time_adj`.
+[34mℹ[39m `kickoff_time_adj = as.Date(kickoff_time, ""%Y-%m-%d"")`.
+[34mℹ[39m unknown timezone '%Y-%m-%d'
+"
+"0","#season 2021/2022"
+"0","db00g <- db00e %>%"
+"0","  left_join(db00a, by = c(""name"" = ""FPL_Name"")) %>%"
+"0","  na.omit() %>%"
+"0","  mutate(kickoff_time_adj = as.Date(kickoff_time, ""%Y-%m-%d""))"
+"2","Warning:"
+"2"," Problem with `mutate()` column `kickoff_time_adj`.
+[34mℹ[39m `kickoff_time_adj = as.Date(kickoff_time, ""%Y-%m-%d"")`.
+[34mℹ[39m unknown timezone '%Y-%m-%d'
+"

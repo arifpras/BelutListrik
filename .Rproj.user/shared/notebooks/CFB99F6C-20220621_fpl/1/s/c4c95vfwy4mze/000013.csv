@@ -1,0 +1,6 @@
+"0","#merging understat's statistics"
+"0","("
+"0","  db00j <- (db00b %>% mutate(season = ""21/22"")) %>%"
+"0","    bind_rows(db00c %>% mutate(season = ""20/21"")) %>%"
+"0","    arrange(player_name, season)"
+"0",")"

@@ -1,0 +1,8 @@
+"0","(belutlistrik_options <- belutlistrik_squad %>% "
+"0","   mutate("
+"0","     ""form352"" = ifelse(formid %in% c(2, 6, 7, 15), ""bench"", ""play""),"
+"0","     ""form442"" = ifelse(formid %in% c(2, 7, 12, 15), ""bench"", ""play""),"
+"0","     ""form343"" = ifelse(formid %in% c(2, 6, 7, 12), ""bench"", ""play"")"
+"0","   ) %>% "
+"0","   relocate(id, formid, form442, form343, form352, Understat_Name) "
+"0",")"

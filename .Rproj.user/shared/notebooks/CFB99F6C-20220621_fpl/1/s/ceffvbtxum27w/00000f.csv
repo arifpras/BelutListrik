@@ -1,0 +1,6 @@
+"0","db00r <- db00q %>% "
+"0","  arrange(team, gameweek) %>% "
+"0","  filter(gameweek < 6) %>% "
+"0","  group_by(team) %>% "
+"0","  summarise(difficulty_next5 = mean(difficulty_rating)) %>% "
+"0","  ungroup()"

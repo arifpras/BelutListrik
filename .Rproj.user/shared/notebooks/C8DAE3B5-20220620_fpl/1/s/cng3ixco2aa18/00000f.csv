@@ -1,0 +1,32 @@
+"0","player_hist_2021 <- ""https://raw.githubusercontent.com/arifpras/Fantasy-Premier-League/master/data/2021-22/gws/merged_gw.csv"""
+"0",""
+"0","player_hist_2122 <- ""https://raw.githubusercontent.com/arifpras/Fantasy-Premier-League/master/data/2020-21/gws/merged_gw.csv"""
+"0",""
+"0","db00d <- read_csv(player_hist_2021)"
+"1","
+[36m──[39m [1mColumn specification[22m [36m─────────────────────────────────────────────────────────────────[39m
+cols(
+  .default = col_double(),
+  name = [31mcol_character()[39m,
+  position = [31mcol_character()[39m,
+  team = [31mcol_character()[39m,
+  kickoff_time = [34mcol_datetime(format = """")[39m,
+  was_home = [33mcol_logical()[39m
+)
+[36mℹ[39m Use `spec()` for the full column specifications.
+
+"
+"0","db00e <- read_csv(player_hist_2122)"
+"1","
+[36m──[39m [1mColumn specification[22m [36m─────────────────────────────────────────────────────────────────[39m
+cols(
+  .default = col_double(),
+  name = [31mcol_character()[39m,
+  position = [31mcol_character()[39m,
+  team = [31mcol_character()[39m,
+  kickoff_time = [34mcol_datetime(format = """")[39m,
+  was_home = [33mcol_logical()[39m
+)
+[36mℹ[39m Use `spec()` for the full column specifications.
+
+"
