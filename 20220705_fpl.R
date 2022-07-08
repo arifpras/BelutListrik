@@ -1,11 +1,11 @@
 ---
-title: "20200621_fpl"
-author: "Arif P. Sulistiono / @arifpras"
-format: html
-editor: visual
+#title: "20220706_fpl"
+#author: "Arif P. Sulistiono / @arifpras"
+#format: html
+#editor: visual
 ---
 
-```{r}
+
 # Remove all items in Environment!
 rm(list = ls())
 ls()
@@ -13,42 +13,42 @@ ls()
 # Load packages
 pacman::p_load(tidyverse, data.table, readxl, writexl, glue, wesanderson,
                RColorBrewer, viridis, ggrepel, ggthemes, ggsci, mFilter,
-               quantmod, corrplot, cowplot, readstata13, readr, knitr, 
+               quantmod, corrplot, cowplot, readstata13, readr, knitr,
                kableExtra, stargazer, parameters, colorspace, dendextend,
-               ggdendro, purrr, cluster, plotly, DescTools, factoextra, 
+               ggdendro, purrr, cluster, plotly, DescTools, factoextra,
                grid, gridExtra, ggsoccer, RCurl, tidytext, rvest)
 
 options(tz = "Europe/London")
 
 # Working directory
 setwd("~/OneDrive - The University of Nottingham/BB_SideProject/2022FPL")
-```
 
-```{r include=FALSE}
+
+
 id_dict <- "https://raw.githubusercontent.com/arifpras/Fantasy-Premier-League/master/data/2021-22/id_dict.csv"
 
 db00a <- readr::read_csv(id_dict)
-```
 
-```{r include=FALSE}
+
+
 player_udrstat_2021 <- "https://raw.githubusercontent.com/arifpras/Fantasy-Premier-League/master/data/2020-21/understat/understat_player.csv"
 
 player_udrstat_2122 <- "https://raw.githubusercontent.com/arifpras/Fantasy-Premier-League/master/data/2021-22/understat/understat_player.csv"
 
 db00b <- read_csv(player_udrstat_2021)
 db00c <- read_csv(player_udrstat_2122)
-```
 
-```{r include=FALSE}
+
+
 player_hist_2021 <- "https://raw.githubusercontent.com/arifpras/Fantasy-Premier-League/master/data/2020-21/gws/merged_gw.csv"
 
 player_hist_2122 <- "https://raw.githubusercontent.com/arifpras/Fantasy-Premier-League/master/data/2021-22/gws/merged_gw.csv"
 
 db00d <- read_csv(player_hist_2021)
 db00e <- read_csv(player_hist_2122)
-```
 
-```{r include=FALSE}
+
+
 #season 2020/2021
 db00f <- db00d %>%
   left_join(db00a, by = c("name" = "FPL_Name")) %>%
@@ -60,32 +60,32 @@ db00g <- db00e %>%
   left_join(db00a, by = c("name" = "FPL_Name")) %>%
   na.omit() %>%
   mutate(kickoff_time_adj = as.Date(kickoff_time, "%Y-%m-%d"))
-```
 
-```{r include=FALSE}
+
+
 #NA understat_id
-db99a <- db00d %>% 
-  left_join(db00a, by = c("name" = "FPL_Name")) %>% 
-  filter(is.na(FPL_ID)) %>% 
+db99a <- db00d %>%
+  left_join(db00a, by = c("name" = "FPL_Name")) %>%
+  filter(is.na(FPL_ID)) %>%
   distinct(name)
 
-db99b <- db00e %>% 
-  left_join(db00a, by = c("name" = "FPL_Name")) %>% 
-  filter(is.na(FPL_ID)) %>% 
+db99b <- db00e %>%
+  left_join(db00a, by = c("name" = "FPL_Name")) %>%
+  filter(is.na(FPL_ID)) %>%
   distinct(name)
-```
 
-```{r}
+
+
 #Active players from mid 2021/2022
-#db00h <- db00f %>% 
+#db00h <- db00f %>%
 #  filter(kickoff_time_adj > "2022-01-31") %>%
-#  group_by(name, Understat_ID) %>% 
+#  group_by(name, Understat_ID) %>%
 #  summarise(
 #    totminutes = sum(minutes),
 #    .groups = "keep"
-#  ) %>% 
-#  ungroup %>% 
-#  filter(totminutes != 0) %>% 
+#  ) %>%
+#  ungroup %>%
+#  filter(totminutes != 0) %>%
 #  mutate(
 #    active_mid2122 = "Yes"
 #  )
@@ -108,13 +108,13 @@ relegated <- c("Burnley", "Norwich", "Watford")
     filter(!team %in% relegated #not including the relegated teams
     )
 )
-```
 
-```{r}
+
+
 #merging player stats from 20/21 and 21/22
 
 #db00i <- db00f %>%
-#  bind_rows(db00g) %>% 
+#  bind_rows(db00g) %>%
 #  right_join(db00h, c = "name")
 
 (
@@ -124,13 +124,13 @@ relegated <- c("Burnley", "Norwich", "Watford")
     filter(active_mid2122 == "Yes") %>%
     arrange(name, kickoff_time_adj, GW)
 )
-```
 
-```{r}
+
+
 #aggregate, player stats in two seasons
 (
-  db01a <- db00i %>% 
-  group_by(name, Understat_ID) %>% 
+  db01a <- db00i %>%
+  group_by(name, Understat_ID) %>%
   summarise(
     avg_points = mean(total_points),
     wvg_points = weighted.mean(total_points, (value/10)),
@@ -143,29 +143,29 @@ relegated <- c("Burnley", "Norwich", "Watford")
     avg_threat = mean(threat),
     avg_clean = mean(clean_sheets),
     .groups = "keep"
-  ) %>% 
-  ungroup() %>% 
+  ) %>%
+  ungroup() %>%
   filter(
     avg_points > 2 & avg_minutes > 40
-  ) %>% 
+  ) %>%
   arrange(desc(wvg_points))
 )
-```
 
-```{r}
+
+
 #merging understat's statistics
 (
   db00j <- (db00b %>% mutate(season = "21/22")) %>%
     bind_rows(db00c %>% mutate(season = "20/21")) %>%
     arrange(player_name, season)
 )
-```
 
-```{r}
+
+
 #individual statistics in two seasons
 (
-  db00k <- db00j %>% 
-  group_by(player_name, id) %>% 
+  db00k <- db00j %>%
+  group_by(player_name, id) %>%
   summarise(
     avg_xG = mean(xG), #expected goals
     avg_xA = mean(xA), #expected assist
@@ -173,37 +173,36 @@ relegated <- c("Burnley", "Norwich", "Watford")
     avg_xGChain = mean(xGChain), #number of Expected Goals in which a player has participated
     avg_xGBuildup = mean(xGBuildup), #which players are part of passing chains that end in a shot but without taking into account the last two links – shot and last pass -, thus measuring midfielders, centre-backs or full-backs who have an important influence on their team's possessions
     .groups = "keep"
-  ) %>% 
-  ungroup() %>% 
+  ) %>%
+  ungroup() %>%
   right_join(
     (db00h %>% select(Understat_ID, team, position)), by = c("id" = "Understat_ID")
   )
 )
-```
 
-```{r}
+
+
 #merging db01a with the understat's statistics
 (
-  db01b <- db01a %>% 
-  left_join((db00k %>% select(-player_name)), c("Understat_ID" = "id")) %>% 
+  db01b <- db01a %>%
+  left_join((db00k %>% select(-player_name)), c("Understat_ID" = "id")) %>%
   relocate(
     name, position, team
   )
 )
-```
 
-```{r final-db}
+
 (
-  db01c <- db01b %>% 
-  left_join(db00a %>% select(Understat_ID, Understat_Name), by = c("Understat_ID")) %>% 
-  select(-name) %>% 
+  db01c <- db01b %>%
+  left_join(db00a %>% select(Understat_ID, Understat_Name), by = c("Understat_ID")) %>%
+  select(-name) %>%
   relocate(
     Understat_Name, position, team
   )
 )
-```
 
-```{r}
+
+
 (
   db00l <- db00g %>%
     filter(!team %in% relegated) %>%  #not including the relegated teams
@@ -230,30 +229,30 @@ relegated <- c("Burnley", "Norwich", "Watford")
                                          n <= 5 ~ 2,
                                          n <= 9 ~ 3,
                                          n <= 13 ~ 4,
-                                         n > 13 ~ 5)) %>% 
+                                         n > 13 ~ 5)) %>%
     add_row(
       team = "Nottingham Forest", difficulty_scaled = 1, n = 0, difficulty_rating = 1
-    ) %>% 
+    ) %>%
     add_row(
       team = "Bournemouth", difficulty_scaled = 1, n = 0, difficulty_rating = 1
-    ) %>% 
+    ) %>%
     add_row(
       team = "Fulham", difficulty_scaled = 1, n = 0, difficulty_rating = 1
-    ) %>% 
+    ) %>%
     arrange(n)
 )
-```
 
-```{r}
+
+
 (
-  db00m <- db00l %>% 
-    select(-team, -team_points, -team_ict, -team_scored, -team_conceded, -team_clean) %>% 
-    as.matrix() %>% 
+  db00m <- db00l %>%
+    select(-team, -team_points, -team_ict, -team_scored, -team_conceded, -team_clean) %>%
+    as.matrix() %>%
     Hmisc::rcorr()
 )
-```
 
-```{r}
+
+
 fixt00 <- "https://fixturedownload.com/results/epl-2022"
 fixt01 <- read_html(fixt00)
 
@@ -268,42 +267,42 @@ fixt05 <- data.frame(fixt04)
 
 fixt06 <-
   as.data.frame(matrix(fixt05$fixt04, ncol = 6, byrow = TRUE))
-```
 
-```{r}
+
+
 (
-  db00n <- fixt06 %>% 
+  db00n <- fixt06 %>%
     select(
       V1, V4, V5
-    ) %>% 
+    ) %>%
     rename(
       gameweek = V1,
       home = V4,
       away = V5
-    ) %>% 
+    ) %>%
     left_join(
       db00l, by = c("away" = "team")
-    ) %>% 
-    select(-difficulty_scaled, -n) %>% 
-    rename(hometeam_dr = difficulty_rating) %>% 
+    ) %>%
+    select(-difficulty_scaled, -n) %>%
+    rename(hometeam_dr = difficulty_rating) %>%
     left_join(
       db00l, by = c("home" = "team")
-    ) %>% 
-    rename(awayteam_dr = difficulty_rating) %>% 
+    ) %>%
+    rename(awayteam_dr = difficulty_rating) %>%
     select(-difficulty_scaled, -n)
 )
-```
 
-```{r}
+
+
 db00o <- db00n %>%
-  select(gameweek, home, hometeam_dr) %>% 
+  select(gameweek, home, hometeam_dr) %>%
   rename(
     team = home,
-    difficulty_rating = hometeam_dr 
+    difficulty_rating = hometeam_dr
   )
 
 db00p <- db00n %>%
-  select(gameweek, away, awayteam_dr) %>% 
+  select(gameweek, away, awayteam_dr) %>%
   rename(
     team = away,
     difficulty_rating = awayteam_dr
@@ -315,37 +314,34 @@ db00p <- db00n %>%
     arrange(gameweek)
 )
 
-```
 
-```{r difficulty_next5}
-db00r <- db00q %>% 
-  arrange(team, gameweek) %>% 
-  filter(gameweek < 6) %>% 
-  group_by(team) %>% 
-  summarise(difficulty_next5 = mean(difficulty_rating)) %>% 
+
+db00r <- db00q %>%
+  arrange(team, gameweek) %>%
+  filter(gameweek < 6) %>%
+  group_by(team) %>%
+  summarise(difficulty_next5 = mean(difficulty_rating)) %>%
   ungroup()
-```
 
-```{r pivoting_by_position}
+
 (
-  db02a <- db01c %>% 
-    select(Understat_Name, position) %>% 
-  as_tibble() %>% 
-  group_by(position) %>% 
+  db02a <- db01c %>%
+    select(Understat_Name, position) %>%
+  as_tibble() %>%
+  group_by(position) %>%
   mutate(
     pos_id = row_number()
-  ) %>% 
-  ungroup() %>% 
+  ) %>%
+  ungroup() %>%
   pivot_wider(
     names_from = position,
     values_from = Understat_Name
   ) %>%
-  select(-pos_id) %>% 
+  select(-pos_id) %>%
   relocate(GK, DEF, MID, FWD)
 )
-```
 
-```{r GK}
+
 pos <- "GK"
 prop <- 0.5
 
@@ -382,7 +378,7 @@ db03b <- db03a %>%
                names_to = "v",
                values_to = "Understat_Name") %>%
   select(-v) %>%
-  left_join(db01c, by = "Understat_Name") %>% 
+  left_join(db01c, by = "Understat_Name") %>%
   left_join(db00r, by = "team")
 
 #saveRDS(db03b, "db03b.rds")
@@ -418,7 +414,7 @@ db03c <- db03b %>%
   )
 
 #saveRDS(db03c, "db03c.rds")
-  
+
 #db99c <- db03c %>%
 #  filter(between(total_avgpoints,
 #                 quantile(total_avgpoints, .25),
@@ -510,13 +506,12 @@ db03d <- db03c %>%
     labs(x = "",
          y = "")
 )
-```
 
-```{r}
+
+
 (gk_choice <- db03d %>% filter(id_gk == 49) %>% mutate("position" = "GK"))
-```
 
-```{r DEF}
+
 pos <- "DEF"
 prop <- 0.5
 
@@ -560,7 +555,7 @@ db04b <- db04a %>%
 
 
 db04c <- db04b %>%
-  filter(Understat_Name != "Marc Cucurella" ) %>% 
+  filter(Understat_Name != "Marc Cucurella" ) %>%
   group_by(id_def) %>%
   summarise(
     agg_avgpoints = sum(avg_points),
@@ -655,9 +650,9 @@ db04d <- db04c %>%
       avg_avgclean,
       avg_difficulty
     ) %>%
-    group_by(id_def) %>% 
-    slice_head(n=1) %>% 
-    ungroup() %>% 
+    group_by(id_def) %>%
+    slice_head(n=1) %>%
+    ungroup() %>%
     pivot_longer(
       cols = 2:7,
       names_to = "indicator",
@@ -686,13 +681,12 @@ db04d <- db04c %>%
     )
 )
 
-```
 
-```{r}
+
+
 (def_choice <- db04d %>% filter(id_def == 13292) %>% mutate("position" = "DEF"))
-```
 
-```{r MID}
+
 pos <- "MID"
 prop <- 0.5
 
@@ -731,10 +725,10 @@ db05b <- db05a %>%
   select(-v) %>%
   left_join(db01c, by = "Understat_Name") %>%
   left_join(db00r, by = "team")
-  
+
 
 #saveRDS(db05b, "db05b.rds")
-  
+
 
 db05c <- db05b %>%
   group_by(id_mid) %>%
@@ -768,7 +762,7 @@ summarise(
 
 
 #saveRDS(db05c, "db05c.rds")
-  
+
 #db99e <- db05c %>%
 #  filter(between(total_avgpoints,
 #                 quantile(total_avgpoints, .25),
@@ -833,9 +827,9 @@ db05d <- db05c %>%
       avg_threat,
       avg_difficulty
     ) %>%
-    group_by(id_mid) %>% 
-    slice_head(n=1) %>% 
-    ungroup() %>% 
+    group_by(id_mid) %>%
+    slice_head(n=1) %>%
+    ungroup() %>%
     pivot_longer(
       cols = 2:7,
       names_to = "indicator",
@@ -864,13 +858,13 @@ db05d <- db05c %>%
     )
 )
 
-```
 
-```{r}
+
+
 (mid_choice <- db05d %>% filter(id_mid == 579) %>% mutate("position" = "MID"))
-```
 
-```{r FWD}
+
+
 pos <- "FWD"
 prop <- 0.5
 
@@ -908,7 +902,7 @@ db06b <- db06a %>%
                names_to = "v",
                values_to = "Understat_Name") %>%
   select(-v) %>%
-  left_join(db01c, by = "Understat_Name") %>% 
+  left_join(db01c, by = "Understat_Name") %>%
   left_join(db00r, by = "team")
 
 #saveRDS(db06b, "db06b.rds")
@@ -1034,9 +1028,9 @@ db06d <- db06c %>%
       avg_threat,
       avg_difficulty
     ) %>%
-    group_by(id_fwd) %>% 
-    slice_head(n=1) %>% 
-    ungroup() %>% 
+    group_by(id_fwd) %>%
+    slice_head(n=1) %>%
+    ungroup() %>%
     pivot_longer(
       cols = 2:7,
       names_to = "indicator",
@@ -1065,29 +1059,29 @@ db06d <- db06c %>%
     )
 )
 
-```
 
-```{r}
+
+
 (fwd_choice <- db06d %>% filter(id_fwd == 573) %>% mutate("position" = "FWD"))
-```
 
-```{r}
+
+
 (belutlistrik_squad <- (gk_choice %>% rename("id" = id_gk)) %>%
    bind_rows((def_choice %>% rename("id" = id_def)),
              (mid_choice %>% rename("id" = id_mid)),
              (fwd_choice %>% rename("id" = id_fwd))
-   ) %>% 
+   ) %>%
    mutate(
      "formid" = row_number()
-   ) %>% 
-   relocate(id, formid, Understat_Name, position) %>% 
+   ) %>%
+   relocate(id, formid, Understat_Name, position) %>%
    mutate(
      Understat_Name = recode(Understat_Name, "Trent Alexander-Arnold" = "Trent")
    )
  )
-```
 
-```{r}
+
+
 (
   belutlistrik_select <- belutlistrik_squad %>%
     filter(position != "GK") %>%
@@ -1136,20 +1130,20 @@ db06d <- db06c %>%
          y = "")
   #guides(fill = guide_legend("Position:"))
 )
-```
 
-```{r}
-(belutlistrik_options <- belutlistrik_squad %>% 
+
+
+(belutlistrik_options <- belutlistrik_squad %>%
    mutate(
      "form352" = ifelse(formid %in% c(2, 6, 7, 15), "bench", "play"),
      "form442" = ifelse(formid %in% c(2, 7, 12, 15), "bench", "play"),
      "form343" = ifelse(formid %in% c(2, 6, 7, 12), "bench", "play")
-   ) %>% 
-   relocate(id, formid, form442, form343, form352, Understat_Name) 
+   ) %>%
+   relocate(id, formid, form442, form343, form352, Understat_Name)
 )
-```
 
-```{r}
+
+
 (for352 <- tibble(
   x = c(98, 98, 83, 83, 83, 89 ,80, 68, 68, 68, 68, 68, 53, 53, 71),
   y = c(50, 110, 25, 50, 75, 110, 110, 10, 30, 50, 70, 90, 37.5, 62.5, 110),
@@ -1167,9 +1161,9 @@ db06d <- db06c %>%
   y = c(50, 110, 25, 50, 75, 110, 110, 20, 40, 60, 80, 110, 25, 50, 75),
   formid = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)
 ))
-```
 
-```{r}
+
+
 (
   belutlistrik_442 <- belutlistrik_options %>%
     select(formid, form442, Understat_Name) %>%
@@ -1181,9 +1175,9 @@ db06d <- db06c %>%
     select(formid, form343, Understat_Name) %>%
     right_join(for343, by = "formid")
 )
-```
 
-```{r}
+
+
 (
   belutlistrik <- ggplot(belutlistrik_442) + #change
     annotate_pitch(
@@ -1226,10 +1220,9 @@ db06d <- db06c %>%
 )
 
 #belutlistrik
-```
 
-```{r}
+
+
 # Removes all items in Environment!
 rm(list = ls())
 ls()
-```

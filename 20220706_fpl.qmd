@@ -1,9 +1,13 @@
 ---
-title: "20200621_fpl"
+title: "20220706_fpl"
 author: "Arif P. Sulistiono / @arifpras"
 format: html
 editor: visual
 ---
+
+# Prerequisites
+
+This initial step covers clearing the environment, installing/loading related libraries that will be used through the analysis, and setting the working directory.
 
 ```{r}
 # Remove all items in Environment!
@@ -11,18 +15,23 @@ rm(list = ls())
 ls()
 
 # Load packages
-pacman::p_load(tidyverse, data.table, readxl, writexl, glue, wesanderson,
-               RColorBrewer, viridis, ggrepel, ggthemes, ggsci, mFilter,
-               quantmod, corrplot, cowplot, readstata13, readr, knitr, 
-               kableExtra, stargazer, parameters, colorspace, dendextend,
-               ggdendro, purrr, cluster, plotly, DescTools, factoextra, 
-               grid, gridExtra, ggsoccer, RCurl, tidytext, rvest)
+# pacman::p_load(tidyverse, data.table, readxl, writexl, glue, wesanderson,
+#                RColorBrewer, viridis, ggrepel, ggthemes, ggsci, mFilter,
+#                quantmod, corrplot, cowplot, readstata13, readr, knitr, 
+#                kableExtra, stargazer, parameters, colorspace, dendextend,
+#                ggdendro, purrr, cluster, plotly, DescTools, factoextra, 
+#                grid, gridExtra, ggsoccer, RCurl, tidytext, rvest)
+
+pacman::p_load(tidyverse, stats, ggsoccer, utils, tidytext, rvest)
 
 options(tz = "Europe/London")
 
 # Working directory
-setwd("~/OneDrive - The University of Nottingham/BB_SideProject/2022FPL")
+setwd("~/OneDrive - The University of Nottingham/BB_SideProject/BelutListrik")
 ```
+
+# Data sets
+## 
 
 ```{r include=FALSE}
 id_dict <- "https://raw.githubusercontent.com/arifpras/Fantasy-Premier-League/master/data/2021-22/id_dict.csv"

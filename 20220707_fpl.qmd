@@ -1,0 +1,391 @@
+---
+title: "20220707_fpl"
+author: "Arif P. Sulistiono / @arifpras"
+format: html
+editor: visual
+---
+
+# Prerequisites
+
+This initial step covers clearing the environment, installing/loading related libraries that will be used through the analysis, and setting the working directory.
+
+```{r pre-requisites}
+# Remove all items in Environment!
+rm(list = ls())
+ls()
+
+# Load packages
+# pacman::p_load(tidyverse, data.table, readxl, writexl, glue, wesanderson,
+#                RColorBrewer, viridis, ggrepel, ggthemes, ggsci, mFilter,
+#                quantmod, corrplot, cowplot, readstata13, readr, knitr, 
+#                kableExtra, stargazer, parameters, colorspace, dendextend,
+#                ggdendro, purrr, cluster, plotly, DescTools, factoextra, 
+#                grid, gridExtra, ggsoccer, RCurl, tidytext, rvest)
+
+pacman::p_load(tidyverse,
+               stats,
+               ggsoccer,
+               utils,
+               tidytext,
+               rvest,
+               corrr,
+               jsonlite,
+               fuzzyjoin,
+               stringr)
+
+options(tz = "Europe/London")
+
+# Working directory
+setwd("~/OneDrive - The University of Nottingham/BB_SideProject/BelutListrik")
+```
+
+# Building database
+
+## FPL: 2020/2021 and 2021/2022
+
+From the FPL's database, we want to get information on players' performances in each game week in two seasons. To obtain the information, we will perform 'web-scrapping' on following repositories: "<https://github.com/vaastav/Fantasy-Premier-League/tree/master/data/2020-21/gws>" and "<https://github.com/vaastav/Fantasy-Premier-League/tree/master/data/2021-22/gws>". *Note: download the RAW version.*
+
+```{r db_fpl}
+# Season 2020/2021
+
+fpl20 <-
+  "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/master/data/2020-21/gws/merged_gw.csv"
+
+(fpl01 <- read_csv(fpl20, show_col_types = FALSE) %>%
+    mutate(season = "20/21"))
+
+# Season 2021/2022
+
+fpl21 <-
+  "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/master/data/2021-22/gws/merged_gw.csv"
+
+(fpl02 <- read_csv(fpl21, show_col_types = FALSE) %>%
+    mutate(season = "21/22"))
+
+# Combine those seasons
+
+(fpl03 <- fpl01 %>%
+    bind_rows(fpl02))
+```
+
+## Aggregating FPL's statistics
+
+The objective is to understand the average points, minutes, ICT index, threats, creativity, and influence in the last two seasons.
+
+```{r fpl_agg}
+(
+  fpl04 <- fpl03 %>%
+    group_by(name) %>%
+    summarise(
+      avg_points = mean(total_points),
+      avg_minutes = mean(minutes),
+      avg_ict = mean(ict_index),
+      avg_threat = mean(threat),
+      avg_creativity = mean(creativity),
+      avg_influence = mean(influence),
+      .groups = "keep"
+    ) %>%
+    ungroup() %>%
+    arrange(desc(avg_points))
+)
+
+fpl04 %>% select(-name) %>%
+  tibble() %>%
+  correlate() %>%
+  network_plot(min_cor = 0.9)
+
+# Setting more restriction:
+
+# (fpl04 %>%  filter(avg_points > 2 & avg_minutes > 40))
+```
+
+## Understat: 2020/2021 and 2021/2022
+
+From the Understat's database, we want to get other information (e.g., xG, xA, shots, key passes, npg, npxG, xGChain, xGBuildUp). The 'web-scrapping' will be performed on following repositories: "<https://github.com/vaastav/Fantasy-Premier-League/tree/master/data/2020-21>" and "<https://github.com/vaastav/Fantasy-Premier-League/tree/master/data/2021-22/understat>". *Note: download the RAW version.*
+
+```{r db_understat}
+# Season 2020/2021
+
+uds20 <-
+  "https://raw.githubusercontent.com/arifpras/Fantasy-Premier-League/master/data/2020-21/understat/understat_player.csv"
+
+(
+  uds01 <- read_csv(uds20, show_col_types = FALSE) %>%
+    mutate(
+      season = "20/21",
+      xG90 = xG / time * 90,
+      xA90 = xA / time * 90,
+      npxG90 = npxG / time * 90,
+      xGChain90 = xGChain / time * 90,
+      xGBuildup90 = xGBuildup / time * 90
+    )
+)
+
+# Season 2021/2022
+
+uds21 <-
+  "https://raw.githubusercontent.com/arifpras/Fantasy-Premier-League/master/data/2021-22/understat/understat_player.csv"
+
+
+(
+  uds02 <- read_csv(uds21, show_col_types = FALSE) %>%
+    mutate(
+      season = "21/22",
+      xG90 = xG / time * 90,
+      xA90 = xA / time * 90,
+      npxG90 = npxG / time * 90,
+      xGChain90 = xGChain / time * 90,
+      xGBuildup90 = xGBuildup / time * 90
+    )
+)
+
+# Combine those seasons
+
+(uds03 <- uds01 %>%
+    bind_rows(uds02))
+```
+
+## Aggregating Understat's statistics
+
+The objective is to understand the average xG (expected goals), xA (expected assist), npxG (non-penalty expected goals), xGChain (number of Expected Goals in which a player has participated), and xGBuildup (which players are part of passing chains that end in a shot but without taking into account the last two links -- shot and last pass -, thus measuring midfielders, centre-backs or full-backs who have an important influence on their team's possessions) in the last two seasons.
+
+```{r understat_agg}
+(
+  uds04 <- uds03 %>%
+    group_by(player_name, id) %>%
+    summarise(
+      avg_xG = mean(xG),
+      #expected goals
+      avg_xA = mean(xA),
+      #expected assist
+      avg_npxG = mean(npxG),
+      #non-penalty expected goals
+      avg_xGChain = mean(xGChain),
+      #number of Expected Goals in which a player has participated
+      avg_xGBuildup = mean(xGBuildup),
+      #which players are part of passing chains that end in a shot but without taking into account the last two links – shot and last pass -, thus measuring midfielders, centre-backs or full-backs who have an important influence on their team's possessions,
+      avg_xG90 = mean(xG90),
+      #every 90 minutes
+      avg_xA90 = mean(xA90),
+      #every 90 minutes
+      avg_npxG90 = mean(npxG90),
+      #every 90 minutes
+      avg_xGChain90 = mean(xGChain90),
+      #every 90 minutes
+      avg_xGBuildup90 = mean(xGBuildup90),
+      #every 90 minutes
+      .groups = "keep"
+    ) %>%
+    ungroup() %>%
+    arrange(desc(avg_xGChain))
+)
+
+uds04 %>%
+  select(avg_xG, avg_xA, avg_npxG, avg_xGChain, avg_xGBuildup) %>%
+  tibble() %>%
+  correlate() %>%
+  network_plot(min_cor = 0.7)
+```
+
+## Merging the databases
+
+To do so, we need to have another file. Another web-scrapping needs to be done.
+
+```{r dictionary}
+dict01 <-
+  "https://raw.githubusercontent.com/arifpras/Fantasy-Premier-League/master/data/2021-22/id_dict.csv"
+
+(dict02 <- readr::read_csv(dict01, show_col_types = FALSE))
+
+(dict03 <- fpl01 %>% select(name, position) %>% distinct(name, position))
+(dict04 <- fpl02 %>% select(name, position) %>% distinct(name, position))
+
+(dict05 <- dict03 %>%
+    bind_rows(dict04) %>%
+    arrange(name) %>%
+    distinct(name, position) %>% 
+    right_join(
+      dict02, by = c("name" = "FPL_Name")
+    ))
+
+# Check duplicated players
+dict05 %>% group_by(name) %>% filter(n()>1)
+
+# Stuart Dallas: DEF
+# Matt Ritchie: DEF
+# Allan Saint-Maximin: MID
+# Ainsley Maitland-Niles: MID
+
+(dict06 <- dict05 %>%
+    filter(!((name == "Stuart Dallas" &
+                position != "MID") |
+               (name == "Matt Ritchie" &
+                  position != "MID") |
+               (name == "Allan Saint-Maximin" & position != "FWD") |
+               (name == "Ainsley Maitland-Niles" &
+                  position != "DEF") |
+               (
+                 name %in% c(
+                   "Álvaro Fernández",
+                   "Cheikhou Kouyaté",
+                   "Fernando Luiz Rosa",
+                   "Nathan Broadhead",
+                   "Pierre-Emerick Aubameyang"
+                 )
+               )
+    )))
+
+# Check duplicated players
+dict06 %>% group_by(name) %>% filter(n()>1)
+
+# Not in the EPL anymore
+dict02 %>% anti_join(dict06, by = c("Understat_Name"))
+```
+
+Now, join all the databases.
+
+```{r db01}
+# FPL data and the dictionary
+
+(
+  fpl05 <- fpl04 %>%
+    select(name, avg_points, avg_minutes, avg_ict, avg_influence) %>%
+    right_join(dict02, by = c("name" = "FPL_Name")) %>% 
+    select(-Understat_ID, -name, -Understat_Name)
+)
+
+# Understat data and the dictionary
+
+(
+  uds05 <- uds04 %>% 
+    select(player_name, id, avg_xG, avg_xA, avg_xGChain) %>% 
+    right_join(dict02, by = c("id" = "Understat_ID")) %>%
+    select(-player_name) %>% 
+    rename(
+      Understat_ID = id
+    ) %>% 
+    relocate(
+      Understat_Name, Understat_ID, FPL_Name, FPL_ID
+    ) 
+)
+
+# Joining fpl05 and uds05
+
+(
+  db01 <- fpl05 %>% 
+    left_join(uds05, by = c("FPL_ID")) %>% 
+    relocate(
+      Understat_Name, Understat_ID, FPL_Name, FPL_ID
+    ) 
+)
+```
+
+## 2022/2023's prices
+
+The objective is to find prices for all players in the upcoming season. We will do another web-scrapping on the FPL official database.
+
+```{r db_official}
+(off00 <-
+   fromJSON("https://fantasy.premierleague.com/api/bootstrap-static/"))
+```
+
+By exploring the JSON data set, we can obtain the prices.
+
+```{r db_prices}
+(
+  pr01 <- tibble(off00$elements) %>%
+    select(first_name,
+           second_name,
+           web_name,
+           now_cost,
+           team,
+           team_code,
+           #id,
+           element_type,          
+           # points_per_game,
+           # selected_by_percent,total_points,
+           # value_form,
+           # value_season,
+           # minutes,
+           # goals_scored,
+           # assists,
+           # clean_sheets,
+           # goals_conceded,
+           # saves,
+           # bps,
+           # influence,
+           # creativity,
+           # threat,
+           # ict_index,
+           # influence_rank,
+           # influence_rank_type,
+           # creativity_rank,
+           # creativity_rank_type,
+           # threat_rank,
+           # threat_rank_type,
+           # ict_index_rank,
+           # ict_index_rank_type,
+           
+           ) %>%
+    mutate(now_cost = now_cost / 10)
+    )
+```
+
+...we also can get information about the strength of each team (difficulty rating).
+
+```{r team}
+#team
+(tm01 <- tibble(off00$teams) %>%
+  select(id, name, short_name, strength))
+```
+
+...and the position for each player.
+
+```{r position}
+(
+  pos01 <- tibble(off00$element_types) %>%
+    select(id, singular_name, singular_name_short)
+)
+```
+
+Now, we can merge all information from the official website.
+
+```{r db02}
+(
+  db02 <- pr01 %>%
+    left_join(tm01, by = c("team" = "id")) %>%
+    left_join(pos01, by = c("element_type" = "id")) %>%
+    rename(
+      "team_name" = name,
+      "position_name" = singular_name,
+      "team_strength" = strength
+    )  %>%
+    #str()
+    mutate_if(is.integer, as.numeric) %>%
+    #str()
+    mutate(full_name = paste(first_name, second_name, sep = " ")) %>%
+    select(
+      -team,
+      -team_code,
+      -element_type,
+      -first_name,
+      -second_name,
+      -web_name
+    ) %>%
+    relocate(full_name, team_name, team_strength, position_name, now_cost)
+)
+```
+
+```{r partial_match}
+(
+  db03 <- db02 %>%
+    fuzzy_full_join(
+      dict06,
+      by = c("full_name" = "Understat_Name", "singular_name_short" = "position"),
+      match_fun = stringi::stri_detect_fixed
+    )
+)
+
+# Check duplicated players
+(db04 <- db03 %>% group_by(full_name) %>% filter(n()>1))
+```
