@@ -377,15 +377,125 @@ Now, we can merge all information from the official website.
 ```
 
 ```{r partial_match}
+# (
+#   db03 <- db02 %>%
+#     fuzzy_full_join(
+#       dict06,
+#       by = c("full_name" = "Understat_Name", "singular_name_short" = "position"),
+#       match_fun = stringi::stri_detect_fixed
+#     )
+# )
+
+
+# xlsx::write.xlsx(db02, file = "20220708_matching.xlsx", sheetName = "new", 
+#   col.names = TRUE, row.names = TRUE, append = FALSE)
+# xlsx::write.xlsx(dict06, file = "20220708_matching.xlsx", sheetName = "old", 
+#   col.names = TRUE, row.names = TRUE, append = TRUE)
+
+# Check duplicated players
+# (db04 <- db03 %>% group_by(full_name) %>% filter(n()>1))
+```
+
+```{r db03}
+db03 <-
+  "https://raw.githubusercontent.com/arifpras/BelutListrik/main/idlist2223.csv?token=GHSAT0AAAAAABVVEBDOWB2LA552LOWSK7JGYWIQLGQ"
+
+(db04 <- read_csv(db03, show_col_types = FALSE))
+```
+
+Combining all players' statistics.
+
+```{r db05}
 (
-  db03 <- db02 %>%
-    fuzzy_full_join(
-      dict06,
-      by = c("full_name" = "Understat_Name", "singular_name_short" = "position"),
-      match_fun = stringi::stri_detect_fixed
+  db05 <- db04 %>% select(-Understat_Name) %>% 
+    left_join(db01, by = c("FPL_ID"))
+)
+
+str(db05)
+```
+
+## Fixture difficulty
+
+First, we need to obtain the upcoming fixtures. Another web-screapping will be done on the following website <https://fixturedownload.com/results/epl-2022>.
+
+```{r fixture}
+fixt00 <- "https://fixturedownload.com/results/epl-2022"
+fixt01 <- read_html(fixt00)
+
+fixt02 <- fixt01 %>%
+  html_node("body") %>%
+  html_children()
+
+fixt03 <- html_nodes(fixt02, 'td')
+
+fixt04 <- html_text(fixt03)
+fixt05 <- data.frame(fixt04)
+
+(fixt06 <-
+    as.data.frame(matrix(
+      fixt05$fixt04, ncol = 6, byrow = TRUE
+    )))
+```
+
+Then, we will combine the fixtures with each team's strenght.
+
+```{r strength}
+(
+  st01 <- fixt06 %>%
+    select(V1, V4, V5) %>%
+    rename(
+      gameweek = V1,
+      home = V4,
+      away = V5
+    ) %>%
+    mutate(
+      home = recode(home, "Nottingham Forest" = "Nott'm Forest"),
+      away = recode(away, "Nottingham Forest" = "Nott'm Forest")
+    ) %>%
+    left_join(tm01, by = c("away" = "name")) %>%
+    select(-id,-short_name) %>%
+    rename(diff_away = strength)  %>%
+    left_join(tm01, by = c("home" = "name")) %>%
+    select(-id,-short_name) %>%
+    rename(diff_home = strength)
+)
+
+(
+  st02 <- st01 %>%
+    select(gameweek, home, diff_away) %>%
+    rename(team = home,
+           opponent_diff = diff_away)
+)
+
+(
+  st03 <- st01 %>%
+    select(gameweek, away, diff_home) %>%
+    rename(team = away,
+           opponent_diff = diff_home)
+)
+
+(st04 <- st02 %>%
+    bind_rows(st03) %>%
+    arrange(gameweek) %>% 
+    mutate(
+      gameweek = as.numeric(gameweek),
+      opponent_diff = as.numeric(opponent_diff)
     )
 )
 
-# Check duplicated players
-(db04 <- db03 %>% group_by(full_name) %>% filter(n()>1))
 ```
+
+Now, we want to aggregate level of difficulty in the next 9 matchs (before the World Cup).
+
+```{r diff_9matchs}
+(diff01 <- st04 %>%
+   arrange(team, gameweek) %>%
+   filter(gameweek < 10) %>%
+   group_by(team) %>%
+   summarise(diff_opponent = mean(opponent_diff)) %>%
+   ungroup() %>% 
+   arrange(diff_opponent))
+
+# st04 %>% filter(gameweek < 10) %>% arrange(team, gameweek)
+```
+
