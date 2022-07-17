@@ -28,7 +28,7 @@ print(db08.columns)
 print(db08.head())
 #db08.shape()
 
-db08["position_name"] == "Goalkeeper"
+#db08["position_name"] == "Goalkeeper"
 
 # goalkeeper
 
@@ -38,7 +38,7 @@ print(gk.head())
 gk_perm = permutations(gk["player_team"], 2)
 gk_comb = pd.DataFrame (gk_perm, columns = ["gk1", "gk2"])
 print (gk_comb.head())
-
+gk_comb.to_csv("gk_comb.csv", index=False)
  
 # Print the obtained permutations
 for i in list(gk_perm):
@@ -53,6 +53,8 @@ defender_perm = permutations(defender["player_team"], 5)
 defender_comb = pd.DataFrame (defender_perm, columns = ["def1", "def2", "def3", "def4", "def5"])
 print (defender_comb.head())
 
+defender_comb.to_csv("defender_comb.csv", index=False)
+
 # midfielder
 
 midfielder = db08[db08["position_name"] == "Midfielder"]
@@ -62,7 +64,7 @@ midfielder_perm = permutations(midfielder["player_team"], 5)
 midfielder_comb = pd.DataFrame (midfielder_perm, columns = ["mid1", "mid2", "mid3", "mid4", "mid5"])
 print (midfielder_comb.head())
 
-# midfielder
+# forward
 
 forward = db08[db08["position_name"] == "Forward"]
 print(forward.head())
@@ -70,4 +72,4 @@ print(forward.head())
 forward_perm = permutations(forward["player_team"], 3)
 forward_comb = pd.DataFrame (forward_perm, columns = ["fwd1", "fwd2", "fwd3"])
 print (forward_comb.head())
- 
+forward_comb.to_csv("forward_comb.csv", index=False) 

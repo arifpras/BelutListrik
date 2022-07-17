@@ -363,7 +363,7 @@ Nathaniel Clyne,Crystal Palace,3,Defender,4.5,CRY,Nathaniel Clyne,DEF,493,Nathan
 Nathaniel Phillips,Liverpool,5,Defender,4,LIV,Nathaniel Phillips,DEF,241,Nathaniel Phillips
 Nayef Aguerd,West Ham,3,Defender,5,WHU,,,,
 Neal Maupay,Brighton,3,Forward,6.5,BHA,Neal Maupay,FWD,63,Neal Maupay
-Neco Williams,Liverpool,5,Defender,4,LIV,Neco Williams,DEF,246,Neco Williams
+Neco Williams,Nott'm Forest,2,Defender,4,NFO,Neco Williams,DEF,246,Neco Williams
 Neeskens Kebano,Fulham,2,Midfielder,5.5,FUL,,,,
 Nélson Cabral Semedo,Wolves,3,Defender,5,WOL,Nélson Cabral Semedo,DEF,437,Nélson Semedo
 Nick Pope,Newcastle,3,Goalkeeper,5,NEW,Nick Pope,GK,112,Nick Pope
@@ -392,7 +392,7 @@ Philip Billing,Bournemouth,2,Midfielder,5.5,BOU,,,,
 Philippe Coutinho Correia,Aston Villa,3,Midfielder,7,AVL,Philippe Coutinho Correia,MID,681,Philippe Coutinho
 Pierre-Emile Højbjerg,Spurs,4,Midfielder,5.5,TOT,Pierre-Emile Højbjerg,MID,365,Pierre-Emile Højbjerg
 Pontus Jansson,Brentford,3,Defender,4.5,BRE,Pontus Jansson,DEF,76,Pontus Jansson
-Raheem Sterling,Man City,5,Midfielder,10,MCI,Raheem Sterling,MID,255,Raheem Sterling
+Raheem Sterling,Chelsea,5,Midfielder,10,CHE,Raheem Sterling,MID,255,Raheem Sterling
 Raphael Dias Belloli,Leeds,2,Midfielder,7,LEE,Raphael Dias Belloli,MID,196,Raphinha
 Raphaël Varane,Man Utd,4,Defender,5,MUN,Raphaël Varane,DEF,555,Raphael Varane
 Rasmus Kristensen,Leeds,2,Defender,5,LEE,,,,
@@ -506,3 +506,15 @@ Yoane Wissa,Brentford,3,Midfielder,5.5,BRE,Yoane Wissa,MID,524,Yoane Wissa
 Youri Tielemans,Leicester,3,Midfielder,6.5,LEI,Youri Tielemans,MID,210,Youri Tielemans
 Yves Bissouma,Spurs,4,Midfielder,5,TOT,Yves Bissouma,MID,70,Yves Bissouma
 Zack Steffen,Man City,5,Goalkeeper,4,MCI,Zack Steffen,GK,260,Zack Steffen
+Aaron Hickey,Brentford,3,Defender,5,BRE,,,,
+Keane Lewis-Potter,Brentford,3,Midfielder,5.5,BRE,,,,
+Thomas Strakosha,Brentford,3,Goalkeeper,4.5,BRE,,,,
+Cheick Doucouré,Crystal Palace,3,Midfielder,5,CRY,,,,
+Luis Sinisterra Lucumí,Leeds,2,Midfielder,6.5,LEE,,,,
+Christian Eriksen,Man Utd,4,Midfielder,6.5,MUN,Christian Eriksen,MID,699,Christian Eriksen
+Omar Richards,Nott'm Forest,2,Defender,4.5,NFO,,,,
+Wayne Hennessey,Nott'm Forest,2,Goalkeeper,4,NFO,Wayne Hennessey,GK,480,Wayne Hennessey
+Joe Ayodele-Aribo,Southampton,3,Midfielder,5.5,SOU,,,,
+Clément Lenglet,Spurs,4,Defender,5,TOT,,,,
+Flynn Downes,West Ham,3,Midfielder,4.5,WHU,,,,
+Nathan Collins,Wolves,3,Defender,4.5,WOL,Nathan Collins,DEF,451,Nathan Collins
