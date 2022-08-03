@@ -1,0 +1,15 @@
+pre {
+  white-space: pre-wrap;
+}
+
+.pull-left {
+  float: left;
+  width: 50%;
+}
+.pull-right {
+  float: right;
+  width: 50%;
+}
+
+.large { font-size: 130% }
+.small { font-size: 70% }

@@ -1,0 +1,1679 @@
+---
+title: "Analysing Fantasy Premier League data in R: Belut Listrik"
+author: "Arif P. Sulistiono / @arifpras"
+format: html
+editor: visual
+---
+
+# Prerequisites
+
+This initial step covers clearing the environment, installing/loading related libraries that will be used through the analysis, and setting the working directory.
+
+```{r pre-requisites}
+# Remove all items in Environment!
+rm(list = ls())
+ls()
+
+pacman::p_load(tidyverse,
+               stats,
+               ggsoccer,
+               # utils,
+               tidytext,
+               rvest,
+               corrr,
+               jsonlite,
+               # fuzzyjoin,
+               stringr,
+               viridis,
+               tictoc,
+               ggrepel)
+
+options(tz = "Europe/London")
+
+# Working directory
+setwd("~/Dropbox/BelutListrik")
+```
+
+# Building database
+
+## FPL: 2020/2021 and 2021/2022
+
+From the FPL's database, we want to get information on players' performances in each game week in two seasons. To obtain the information, we will perform 'web-scrapping' on following repositories: "<https://github.com/vaastav/Fantasy-Premier-League/tree/master/data/2020-21/gws>" and "<https://github.com/vaastav/Fantasy-Premier-League/tree/master/data/2021-22/gws>". *Note: download the RAW version.*
+
+```{r db_fpl}
+# Season 2020/2021
+
+fpl20 <-
+  "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/master/data/2020-21/gws/merged_gw.csv"
+
+(fpl01 <- read_csv(fpl20, show_col_types = FALSE) %>%
+    mutate(season = "20/21"))
+
+# Season 2021/2022
+
+fpl21 <-
+  "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/master/data/2021-22/gws/merged_gw.csv"
+
+(fpl02 <- read_csv(fpl21, show_col_types = FALSE) %>%
+    mutate(season = "21/22"))
+
+# Combine those seasons
+
+(fpl03 <- fpl01 %>%
+    bind_rows(fpl02))
+
+# save(fpl01, fpl02, fpl03,
+#      file = "01_db_fpl.rdata")
+# 
+# load("01_db_fpl.rdata")
+```
+
+## Aggregating the FPL's statistics
+
+The objective is to understand the average points, minutes, ICT index, threats, creativity, and influence in the last two seasons.
+
+```{r fpl_agg}
+(
+  fpl04 <- fpl03 %>%
+    group_by(name) %>%
+    summarise(
+      avg_points = mean(total_points),
+      avg_minutes = mean(minutes),
+      avg_ict = mean(ict_index),
+      avg_threat = mean(threat),
+      avg_creativity = mean(creativity),
+      avg_influence = mean(influence),
+      .groups = "keep"
+    ) %>%
+    ungroup() %>%
+    arrange(desc(avg_points))
+)
+
+fpl04 %>% select(-name) %>%
+  tibble() %>%
+  correlate() %>%
+  network_plot(min_cor = 0.9)
+
+# save(fpl04,
+#      file = "02_db_agg.rdata")
+# load("02_db_agg.rdata")
+```
+
+## Understat: 2020/2021 and 2021/2022
+
+From the Understat's database, we want to get other information (e.g., xG, xA, shots, key passes, npg, npxG, xGChain, xGBuildUp). The 'web-scrapping' will be performed on following repositories: "<https://github.com/vaastav/Fantasy-Premier-League/tree/master/data/2020-21>" and "<https://github.com/vaastav/Fantasy-Premier-League/tree/master/data/2021-22/understat>". *Note: download the RAW version.*
+
+```{r db_understat}
+# Season 2020/2021
+
+uds20 <-
+  "https://raw.githubusercontent.com/arifpras/Fantasy-Premier-League/master/data/2020-21/understat/understat_player.csv"
+
+(
+  uds01 <- read_csv(uds20, show_col_types = FALSE) %>%
+    mutate(
+      season = "20/21",
+      xG90 = xG / time * 90, # Expected goals per 90 minutes played
+      xA90 = xA / time * 90,
+      npxG90 = npxG / time * 90,
+      xGChain90 = xGChain / time * 90,
+      xGBuildup90 = xGBuildup / time * 90
+    )
+)
+
+# Season 2021/2022
+
+uds21 <-
+  "https://raw.githubusercontent.com/arifpras/Fantasy-Premier-League/master/data/2021-22/understat/understat_player.csv"
+
+
+(
+  uds02 <- read_csv(uds21, show_col_types = FALSE) %>%
+    mutate(
+      season = "21/22",
+      xG90 = xG / time * 90, # Expected goals per 90 minutes played
+      xA90 = xA / time * 90,
+      npxG90 = npxG / time * 90,
+      xGChain90 = xGChain / time * 90,
+      xGBuildup90 = xGBuildup / time * 90
+    )
+)
+
+# Combine those seasons
+
+(uds03 <- uds01 %>%
+    bind_rows(uds02))
+
+# save(uds01, uds02, uds03,
+#      file = "03_db_understat.rdata")
+# load("03_db_understat.rdata")
+```
+
+## Aggregating Understat's statistics
+
+The objective is to understand the average xG (expected goals), xA (expected assist), npxG (non-penalty expected goals), xGChain (number of Expected Goals in which a player has participated), and xGBuildup (which players are part of passing chains that end in a shot but without taking into account the last two links -- shot and last pass -, thus measuring midfielders, centre-backs or full-backs who have an important influence on their team's possessions) in the last two seasons.
+
+```{r understat_agg}
+(
+  uds04 <- uds03 %>%
+    group_by(player_name, id) %>%
+    summarise(
+      avg_xG = mean(xG),
+      #expected goals
+      avg_xA = mean(xA),
+      #expected assist
+      avg_npxG = mean(npxG),
+      #non-penalty expected goals
+      avg_xGChain = mean(xGChain),
+      #number of Expected Goals in which a player has participated
+      avg_xGBuildup = mean(xGBuildup),
+      #which players are part of passing chains that end in a shot but without taking into account the last two links – shot and last pass -, thus measuring midfielders, centre-backs or full-backs who have an important influence on their team's possessions,
+      avg_xG90 = mean(xG90),
+      #every 90 minutes
+      avg_xA90 = mean(xA90),
+      #every 90 minutes
+      avg_npxG90 = mean(npxG90),
+      #every 90 minutes
+      avg_xGChain90 = mean(xGChain90),
+      #every 90 minutes
+      avg_xGBuildup90 = mean(xGBuildup90),
+      #every 90 minutes
+      .groups = "keep"
+    ) %>%
+    ungroup() %>%
+    arrange(desc(avg_xGChain))
+)
+
+uds04 %>%
+  select(avg_xG, avg_xA, avg_npxG, avg_xGChain, avg_xGBuildup) %>%
+  tibble() %>%
+  correlate() %>%
+  network_plot(min_cor = 0.7)
+
+# save(uds04,
+#      file = "04_understat_agg.rdata")
+# load("04_understat_agg.rdata")
+```
+
+## Merging the databases
+
+To do so, we need to have another file. Another web-scrapping needs to be done on following repository <https://github.com/vaastav/Fantasy-Premier-League/blob/master/data/2021-22/id_dict.csv>. But, before that we have to make sure no duplicated players due to the changing in their positions.
+
+```{r dictionary}
+dict01 <-
+  "https://raw.githubusercontent.com/arifpras/Fantasy-Premier-League/master/data/2021-22/id_dict.csv"
+
+(dict02 <- readr::read_csv(dict01, show_col_types = FALSE))
+
+(dict03 <- fpl01 %>% select(name, position) %>% distinct(name, position))
+(dict04 <- fpl02 %>% select(name, position) %>% distinct(name, position))
+
+(dict05 <- dict03 %>%
+    bind_rows(dict04) %>%
+    arrange(name) %>%
+    distinct(name, position) %>% 
+    right_join(
+      dict02, by = c("name" = "FPL_Name")
+    ))
+
+# Check duplicated players based on their positions
+dict05 %>% group_by(name) %>% filter(n()>1)
+
+# Stuart Dallas: DEF
+# Matt Ritchie: DEF
+# Allan Saint-Maximin: MID
+# Ainsley Maitland-Niles: MID
+
+(dict06 <- dict05 %>%
+    filter(!( # "!" means exclude
+        (name == "Stuart Dallas" & position != "MID") |
+        (name == "Matt Ritchie" & position != "MID") |
+        (name == "Allan Saint-Maximin" & position != "FWD") |
+        (name == "Ainsley Maitland-Niles" & position != "DEF") |
+        (
+          name %in% c(
+            "Álvaro Fernández",
+            "Cheikhou Kouyaté",
+            "Fernando Luiz Rosa",
+            "Nathan Broadhead",
+            "Pierre-Emerick Aubameyang"
+          )
+        )
+    )))
+
+# Check duplicated players
+dict06 %>% group_by(name) %>% filter(n()>1)
+
+# Not in the EPL anymore
+dict02 %>% anti_join(dict06, by = c("Understat_Name"))
+
+# save(dict06,
+#      file = "06_dictionary.rdata")
+# load("06_dictionary.rdata")
+```
+
+Now, join all the databases.
+
+```{r db01}
+# FPL data and the dictionary
+
+(
+  fpl05 <- fpl04 %>%
+    select(name, avg_points, avg_minutes, avg_ict, avg_influence) %>%
+    right_join(dict02, by = c("name" = "FPL_Name")) %>% 
+    select(-Understat_ID, -name, -Understat_Name)
+)
+
+# Understat data and the dictionary
+
+(
+  uds05 <- uds04 %>% 
+    select(player_name, id, avg_xG, avg_xA, avg_xGChain) %>% 
+    right_join(dict02, by = c("id" = "Understat_ID")) %>%
+    select(-player_name) %>% 
+    rename(
+      Understat_ID = id
+    ) %>% 
+    relocate(
+      Understat_Name, Understat_ID, FPL_Name, FPL_ID
+    ) 
+)
+
+# Joining fpl05 and uds05
+
+(
+  db01 <- fpl05 %>% 
+    left_join(uds05, by = c("FPL_ID")) %>% 
+    relocate(
+      Understat_Name, Understat_ID, FPL_Name, FPL_ID
+    ) 
+)
+
+# save(fpl05, uds05, db01,
+#      file = "07_db01.rdata")
+# load("07_db01.rdata")
+```
+
+## 2022/2023's prices
+
+The objective is to find prices for all players in the upcoming season. We will do another web-scrapping on the FPL official database.
+
+```{r db_official}
+(off00 <-
+   fromJSON("https://fantasy.premierleague.com/api/bootstrap-static/"))
+```
+
+By exploring the JSON data set, we can obtain the prices.
+
+```{r db_prices}
+(
+  pr01 <- tibble(off00$elements) %>%
+    select(first_name,
+           second_name,
+           web_name,
+           now_cost,
+           team,
+           team_code,
+           #id,
+           element_type,          
+           # points_per_game,
+           # selected_by_percent,total_points,
+           # value_form,
+           # value_season,
+           # minutes,
+           # goals_scored,
+           # assists,
+           # clean_sheets,
+           # goals_conceded,
+           # saves,
+           # bps,
+           # influence,
+           # creativity,
+           # threat,
+           # ict_index,
+           # influence_rank,
+           # influence_rank_type,
+           # creativity_rank,
+           # creativity_rank_type,
+           # threat_rank,
+           # threat_rank_type,
+           # ict_index_rank,
+           # ict_index_rank_type
+           ) %>%
+    mutate(now_cost = now_cost / 10)
+    )
+
+# save(pr01,
+#      file = "08_db_prices.rdata")
+# load("08_db_prices.rdata")
+```
+
+...we also can get information about the strength of each team (difficulty rating).
+
+```{r team}
+#team
+(tm01 <- tibble(off00$teams) %>%
+  select(id, name, short_name, strength) %>% 
+   arrange(desc(strength)))
+
+# save(tm01,
+#      file = "09_team.rdata")
+# load("09_team.rdata")
+```
+
+...and the position for each player.
+
+```{r position}
+(
+  pos01 <- tibble(off00$element_types) %>%
+    select(id, singular_name, singular_name_short)
+)
+
+# save(pos01,
+#      file = "10_position.rdata")
+# load("10_position.rdata")
+```
+
+Now, we can merge all information from the official website.
+
+```{r db02}
+(
+  db02 <- pr01 %>%
+    left_join(tm01, by = c("team" = "id")) %>%
+    left_join(pos01, by = c("element_type" = "id")) %>%
+    rename(
+      "team_name" = name,
+      "position_name" = singular_name,
+      "team_strength" = strength
+    )  %>%
+    #str()
+    mutate_if(is.integer, as.numeric) %>%
+    #str()
+    mutate(full_name = paste(first_name, second_name, sep = " ")) %>%
+    select(
+      -team,
+      -team_code,
+      -element_type,
+      -first_name,
+      -second_name
+    ) %>%
+    relocate(full_name, team_name, team_strength, position_name, now_cost)
+)
+
+# save(db02,
+#      file = "11_db02.rdata")
+# load("11_db02.rdata")
+```
+
+```{r partial_match}
+# NOTE: IGNORE THESE CODES
+
+# (
+#   db03 <- db02 %>%
+#     fuzzy_full_join(
+#       dict06,
+#       by = c("full_name" = "Understat_Name", "singular_name_short" = "position"),
+#       match_fun = stringi::stri_detect_fixed
+#     )
+# )
+
+# xlsx::write.xlsx(db02, file = "20220708_matching.xlsx", sheetName = "new", 
+#   col.names = TRUE, row.names = TRUE, append = FALSE)
+# xlsx::write.xlsx(dict06, file = "20220708_matching.xlsx", sheetName = "old", 
+#   col.names = TRUE, row.names = TRUE, append = TRUE)
+
+# Check duplicated players
+# (db04 <- db03 %>% group_by(full_name) %>% filter(n()>1))
+
+```
+
+```{r db04_before}
+# db03 <-
+#   "https://raw.githubusercontent.com/arifpras/BelutListrik/main/idlist2223.csv?token=GHSAT0AAAAAABVVEBDPPBAPWETEY5M6KECIYWJXFZA"
+
+db03 <- "~/OneDrive - The University of Nottingham/BB_SideProject/BelutListrik/idlist2223.csv"
+
+(db04 <- read_csv(db03, show_col_types = FALSE))
+```
+
+```{r db02_vs_db04}
+(
+  db02_db04 <- db02 %>%
+    anti_join(db04, by = c("full_name")) %>%
+    left_join(dict06, by = c("full_name" = "name")) %>%
+    select(-Understat_ID,-web_name, -singular_name_short) %>%
+    mutate(name = ifelse(Understat_Name == "", "", full_name)) %>%
+    relocate(
+      "full_name",
+      "team_name",
+      "team_strength",
+      "position_name",
+      "now_cost",
+      "short_name",
+      "name",
+      "position",
+      "FPL_ID",
+      "Understat_Name"
+    )
+)
+
+## With index
+# xlsx::write.xlsx(db02_db04, file = "20220715_matching.xlsx", sheetName = "new",
+#                  col.names = TRUE, row.names = TRUE, append = FALSE)
+
+## No index
+# xlsx::write.xlsx(
+#   as.data.frame(db02_db04),
+#   file = "20220726_matching.xlsx",
+#   sheetName = "new",
+#   col.names = TRUE,
+#   row.names = FALSE,
+#   append = FALSE,
+#   showNA = FALSE
+# )
+```
+
+```{r db04_after}
+db03 <- "~/OneDrive - The University of Nottingham/BB_SideProject/BelutListrik/idlist2223.csv"
+
+(db04 <- read_csv(db03, show_col_types = FALSE))
+```
+
+Combining all players' statistics.
+
+```{r db05}
+(
+  db05 <- db04 %>% select(-Understat_Name) %>%
+    left_join(db01, by = c("FPL_ID"))
+)
+
+str(db05)
+
+# (db06 <- extract(db05, full_name, c("first_name", "last_name"), "([^ ]+) (.*)"))
+
+(
+  db06 <- db05 %>%
+    left_join(db02 %>% select(full_name, web_name, team_name), by = c("full_name", "team_name")) %>%
+    select(-short_name,-name,-FPL_ID,-FPL_Name, -Understat_Name,-Understat_ID) %>%
+    relocate(full_name, web_name)
+)
+```
+
+## Fixture difficulty
+
+First, we need to obtain the upcoming fixtures. Another web-screapping will be done on the following website <https://fixturedownload.com/results/epl-2022>.
+
+```{r fixture}
+fixt00 <- "https://fixturedownload.com/results/epl-2022"
+fixt01 <- read_html(fixt00)
+
+fixt02 <- fixt01 %>%
+  html_node("body") %>%
+  html_children()
+
+fixt03 <- html_nodes(fixt02, 'td')
+
+fixt04 <- html_text(fixt03)
+fixt05 <- data.frame(fixt04)
+
+(fixt06 <-
+    as.data.frame(matrix(
+      fixt05$fixt04, ncol = 6, byrow = TRUE
+    )))
+```
+
+Then, we will combine the fixtures with each team's strength.
+
+```{r strength}
+(
+  st01 <- fixt06 %>%
+    select(V1, V4, V5) %>%
+    rename(
+      gameweek = V1,
+      home = V4,
+      away = V5
+    ) %>%
+    mutate(
+      home = recode(home, "Nottingham Forest" = "Nott'm Forest"),
+      away = recode(away, "Nottingham Forest" = "Nott'm Forest")
+    ) %>%
+    left_join(tm01, by = c("away" = "name")) %>%
+    select(-id,-short_name) %>%
+    rename(diff_away = strength)  %>%
+    left_join(tm01, by = c("home" = "name")) %>%
+    select(-id,-short_name) %>%
+    rename(diff_home = strength)
+)
+
+(
+  st02 <- st01 %>%
+    select(gameweek, home, diff_away) %>%
+    rename(team = home,
+           opponent_diff = diff_away)
+)
+
+(
+  st03 <- st01 %>%
+    select(gameweek, away, diff_home) %>%
+    rename(team = away,
+           opponent_diff = diff_home)
+)
+
+(st04 <- st02 %>%
+    bind_rows(st03) %>%
+    arrange(gameweek) %>% 
+    mutate(
+      gameweek = as.numeric(gameweek),
+      opponent_diff = as.numeric(opponent_diff)
+    )
+)
+
+```
+
+Now, we want to aggregate level of difficulty in the next 8 matches (before the World Cup).
+
+```{r diff_9matches}
+(diff01 <- st04 %>%
+   arrange(team, gameweek) %>%
+   filter(gameweek < 9) %>%
+   group_by(team) %>%
+   summarise(diff_opponent = mean(opponent_diff)) %>%
+   ungroup() %>% 
+   arrange(diff_opponent))
+
+# st04 %>% filter(gameweek < 10) %>% arrange(team, gameweek)
+```
+
+Combining the next 8 matches difficulty to players' statistics.
+
+```{r db07_final}
+(
+  db07 <- db06 %>%
+    left_join(diff01, by = c ("team_name" = "team")) %>%
+    mutate(player_id = row_number()) %>%
+    relocate(player_id, full_name, web_name) %>%
+    left_join(tm01 %>% select(name, short_name), by = c("team_name" = "name")) %>%
+    mutate(player_team = paste(web_name, short_name, sep = " | ")) %>%
+    relocate(
+      player_id,
+      player_team,
+      position_name,
+      now_cost,
+      avg_points,
+      avg_minutes,
+      avg_ict,
+      avg_influence,
+      avg_xG,
+      avg_xA,
+      avg_xGChain,
+      diff_opponent
+    ) %>%
+    mutate_if(is.numeric , replace_na, replace = 0)
+)
+
+# saveRDS(db07, file = "db07.rds")
+# 
+# xlsx::write.xlsx(
+#   db07,
+#   file = "20220726_fpl.xlsx",
+#   sheetName = "db07",
+#   col.names = TRUE,
+#   row.names = TRUE,
+#   append = FALSE
+# )
+```
+
+# Building team
+
+## Grouping by positions
+
+```{r pos01}
+(
+  pos01 <- db07 %>% 
+    select(player_team, position_name) %>% 
+    as_tibble() %>% 
+    arrange(position_name) %>% 
+    group_by(position_name) %>% 
+    mutate(
+      pos_id = row_number()
+    ) %>% 
+    ungroup() %>% 
+    pivot_wider(
+      names_from = position_name,
+      values_from = player_team
+    ) %>% 
+    select(-pos_id) %>% 
+    relocate(
+      Goalkeeper, Defender, Midfielder, Forward
+    )
+)
+```
+
+How many combinations (without repetition) will we have?
+
+$C_{k}(n) = \binom{n}{k} = \frac{n!}{k!(n-k)!}$, where
+
+n = Elements to choose from (i.e., GK = 52 players available)
+
+k = Elements chosen (i.e., maximum GK in the team = 2)
+
+```{r comb_no_rep}
+# References:
+# https://www.hackmath.net/en/calculator/combinations-and-permutations?n=52&k=2&order=0&repeat=0
+# https://rpruim.github.io/s341/S19/from-class/MathinRmd.html
+# https://koalatea.io/r-combinations-permutations/
+
+(
+  gk_n <-
+    db07 %>% filter(position_name %in% "Goalkeeper") %>% summarise(n = n()) %>% as.numeric()
+)
+
+(def_n <-
+    db07 %>% filter(position_name %in% "Defender") %>% summarise(n = n())%>% as.numeric())
+
+(mid_n <-
+    db07 %>% filter(position_name %in% "Midfielder") %>% summarise(n = n())%>% as.numeric())
+
+(fwd_n <-
+    db07 %>% filter(position_name %in% "Forward") %>% summarise(n = n())%>% as.numeric())
+
+gk_k <- as.numeric(2)
+def_k <- as.numeric(5)
+mid_k <- as.numeric(5)
+fwd_k <- as.numeric(3)
+
+(gk_choose <- choose(n = gk_n, k = gk_k))
+(def_choose <- choose(n = def_n, k = def_k))
+(mid_choose <- choose(n = mid_n, k = mid_k))
+(fwd_choose <- choose(n = fwd_n, k = fwd_k))
+```
+
+Goalkeeper = `r toString(gk_choose)` Defender = `r toString(def_choose)` Midfielder = `r toString(mid_choose)` Forward = `r toString(fwd_choose)`
+
+## GK: A group with 2 players
+
+First we want to make a group consists of 2 players.
+
+```{r gk02}
+tic("Time needed:")
+set.seed(19) #random number
+
+gk01 <- db07 %>% filter(position_name %in% "Goalkeeper")
+gk02 <-  t(combn(gk01$player_team, 2)) #max: 2 players
+
+toc()
+beepr::beep(sound = 1)
+```
+
+...then combine with their statistics.
+
+```{r gk03}
+tic("Time needed:")
+
+(
+  gk03 <- gk02 %>%
+    # na.omit() %>%
+    as_tibble() %>%
+    mutate("id_gk" = row_number()) %>%
+    relocate(id_gk) %>%
+    pivot_longer(
+      cols = 2:3,
+      names_to = "v",
+      values_to = "player_team"
+    ) %>%
+    select(-v) %>%
+    left_join(db07, by = "player_team")
+)
+
+toc()
+beepr::beep(sound = 1)
+```
+
+...aggregate statistics for each group.
+
+```{r gk04}
+tic("Time needed:")
+
+(
+  gk04 <- gk03 %>%
+    group_by(id_gk) %>%
+    #filter(!any(player_team == "Alisson | LIV" | player_team == "Ederson | MCI")) %>% #No Alisson
+    filter(any(player_team == "Mendy | CHE")) %>% #Mendy is a must
+    summarise(
+      sum_price = sum(now_cost, na.rm = FALSE),
+      #sum, because we have maximal budget
+      #avg_avgpoints = mean(avg_points, na.rm = FALSE),
+      sum_avgpoints = mean(avg_points, na.rm = FALSE), #sum for mean, so can be compared
+      #1 main, 1 bench
+      #avg_avgpoints = mean(avg_points, na.rm = FALSE), #both could be main
+      #average, because we have to pick 1 players
+      avg_avgminutes = mean(avg_minutes, na.rm = FALSE),
+      avg_avgict = mean(avg_ict, na.rm = FALSE),
+      avg_avginfluence = mean(avg_influence, na.rm = FALSE),
+      avg_avgXG = mean(avg_xG, na.rm = FALSE),
+      avg_avgxA = mean(avg_xA, na.rm = FALSE),
+      avg_avgxGChain = mean(avg_xGChain, na.rm = FALSE),
+      avg_diffopp = mean(diff_opponent, na.rm = FALSE),
+    ) %>%
+    arrange(desc(sum_avgpoints),
+            sum_price) %>%
+    ungroup()
+)
+
+toc()
+beepr::beep(sound = 1)
+```
+
+Let's say the budget for the goalkeeper position is 10.
+
+```{r gk05}
+tic("Time needed:")
+
+(
+  gk05 <- gk04 %>%
+    arrange(desc(sum_avgpoints)) %>%
+    filter(sum_price <= 9.5) %>% #restrict the price
+    slice_head(n = 5) %>% #the closest to 10
+    left_join(gk03, by = "id_gk") %>% 
+    relocate(id_gk, player_team)
+)
+
+toc()
+beepr::beep(sound = 1)
+```
+
+...it's going to be easier to plot the data.
+
+```{r gk_plot}
+  (
+    gk_plot01 <- gk05 %>%
+      select(
+        id_gk,
+        sum_price,
+        sum_avgpoints,
+        avg_avgminutes,
+        avg_avgict,
+        avg_avginfluence,
+        avg_avgXG,
+        avg_avgxA,
+        avg_avgxGChain,
+        avg_diffopp
+      ) %>%
+      group_by(id_gk) %>%
+      slice_head(n = 1) %>%
+      ungroup() %>%
+      pivot_longer(
+        cols = 2:10,
+        names_to = "indicator",
+        values_to = "value"
+      ) %>%
+      ggplot(aes(
+        x = reorder_within(id_gk, value, indicator),
+        y = value,
+        fill = factor(id_gk)
+      )) +
+      geom_col() +
+      #geom_bar(stat = "identity", aes(fill = factor(id_gk))) +
+      coord_flip() +
+      scale_x_reordered() +
+      #scale_fill_viridis(discrete = TRUE) +
+      #scale_fill_manual(values = wes_palette("Darjeeling1")) +
+      scale_fill_manual(values = c(
+        "#ef476f", "#ffd166", "#06d6a0", "#118ab2", "#073b4c"
+      )) +
+      egg::theme_article() +
+      facet_wrap(~ indicator, ncol = 3, scales = "free") +
+      theme(legend.position = "none") +
+      labs(x = "",
+           y = "")
+)
+```
+
+Which GK team?
+
+```{r gk_choice}
+gk_team <- "666"
+
+(gk_choice <-
+    gk05 %>% filter(id_gk == gk_team) %>% mutate("position" = "GK"))
+```
+
+Take a loot at the player's statistics individually.
+
+```{r gk_indv_stat}
+(
+  gk_plot02 <- gk_choice %>%
+    select(
+      player_team,
+      now_cost,
+      avg_points,
+      avg_minutes,
+      avg_ict,
+      avg_influence,
+      avg_xG,
+      avg_xA,
+      avg_xGChain,
+      diff_opponent
+    ) %>%
+    pivot_longer(
+      cols = 2:10,
+      names_to = "indicator",
+      values_to = "value"
+    ) %>%
+    ggplot(aes(
+      x = reorder_within(player_team, value, indicator),
+      y = value,
+      fill = factor(player_team)
+    )) +
+    geom_col() +
+    #geom_bar(stat = "identity", aes(fill = factor(id_gk))) +
+    coord_flip() +
+    scale_x_reordered() +
+    #scale_fill_viridis(discrete = TRUE) +
+    #scale_fill_manual(values = wes_palette("Darjeeling1")) +
+    scale_fill_manual(values = c("#6a4c93", "#1982c4")) +
+    egg::theme_article() +
+    facet_wrap( ~ indicator, ncol = 3, scales = "free") +
+    theme(legend.position = "none") +
+    labs(x = "",
+         y = "")
+)
+```
+
+## DEF: A group with 5 players
+
+A group consists of 5 players.
+
+```{r def02}
+set.seed(19) #random number
+
+def01 <- db07 %>% filter(position_name %in% "Defender") %>%
+  arrange(desc(now_cost))
+
+def_high <- def01 %>% slice_head(prop = 0.20)
+def_low <- def01 %>% slice_tail(prop = 0.20)
+def_comb <- def_high %>%
+  bind_rows(def_low)
+
+choose(n = def_comb %>% summarise(n = n()) %>% as.numeric(), k = 5)
+
+tic("Time needed:")
+def02 <- t(combn(def_comb$player_team, 5)) #max: 5 players
+toc()
+beepr::beep(sound = 1)
+```
+
+...then combine with their statistics.
+
+```{r def03}
+tic("Time needed:")
+(
+  def03 <- def02 %>%
+    # na.omit() %>%
+    as_tibble() %>%
+    mutate("id_def" = row_number()) %>%
+    relocate(id_def) %>%
+    pivot_longer(
+      cols = 2:6,
+      names_to = "v",
+      values_to = "player_team"
+    ) %>%
+    select(-v) %>%
+    left_join(db07, by = "player_team")
+)
+toc()
+beepr::beep(sound = 1)
+```
+
+...aggregate statistics for each group.
+
+```{r def04}
+tic("Time needed:") #~3 menit
+(
+  def04 <- def03 %>%
+    group_by(id_def) %>%
+    # filter(any(
+    #   player_team %in% c("Alexander-Arnold | LIV") #~3 menit
+    # )) %>%
+    # filter(any(
+    #   player_team %in% c("Cancelo | MCI") # separated 56 sec, combine 94 sec
+    # )) %>%        
+    # filter(any(
+    #   player_team %in% c("Perišić | TOT") # separated 56 sec, combine 94 sec
+    # )) %>%
+    filter(any(
+      player_team %in% c("N.Williams | NFO") # separated 56 sec, combine 94 sec
+    )) %>%
+    summarise(
+      sum_price = sum(now_cost),
+      #sum, because we have maximal budget
+      sum_avgpoints = sum(avg_points),
+      #sum, because we can pick 5 players
+      avg_avgminutes = mean(avg_minutes),
+      avg_avgict = mean(avg_ict),
+      avg_avginfluence = mean(avg_influence),
+      avg_avgXG = mean(avg_xG),
+      avg_avgxA = mean(avg_xA),
+      avg_avgxGChain = mean(avg_xGChain),
+      avg_diffopp = mean(diff_opponent),
+    ) %>%
+    arrange(desc(sum_avgpoints),
+            sum_price) %>% 
+    ungroup()
+)
+toc()
+beepr::beep(1)
+```
+
+Let's say the budget for the defender position is 30.
+
+```{r def05}
+tic("Time needed:")
+
+(
+  def05 <- def04 %>%
+    arrange(desc(sum_avgpoints)) %>%
+    filter(sum_price <= 34.5 & sum_price > 20) %>%
+    slice_head(n = 5) %>%
+    left_join(def03, by = "id_def") %>%
+    relocate(id_def, player_team)
+)
+
+toc()
+beepr::beep(sound = 1)
+```
+
+...it's going to be easier to plot the data.
+
+```{r def_plot}
+tic("Time needed:")
+
+(
+  def_plot01 <- def05 %>%
+    select(
+      id_def,
+      sum_price,
+      sum_avgpoints,
+      avg_avgminutes,
+      avg_avgict,
+      avg_avginfluence,
+      avg_avgXG,
+      avg_avgxA,
+      avg_avgxGChain,
+      avg_diffopp
+    ) %>%
+    group_by(id_def) %>%
+    slice_head(n = 1) %>%
+    ungroup() %>%
+    pivot_longer(
+      cols = 2:10,
+      names_to = "indicator",
+      values_to = "value"
+    ) %>%
+    ggplot(aes(
+      x = reorder_within(id_def, value, indicator),
+      y = value,
+      fill = factor(id_def)
+    )) +
+    geom_col() +
+    #geom_bar(stat = "identity", aes(fill = factor(id_gk))) +
+    coord_flip() +
+    scale_x_reordered() +
+    #scale_fill_viridis(discrete = TRUE) +
+    #scale_fill_manual(values = wes_palette("Darjeeling1")) +
+    # scale_fill_manual(values = c(
+    #   "#ef476f", "#ffd166", "#06d6a0", "#118ab2", "#073b4c"
+    # )) +
+    scale_fill_manual(values = c(
+      "#6a4c93", "#1982c4", "#8ac926", "#ffca3a", "#ff595e"
+    )) +
+    egg::theme_article() +
+    facet_wrap( ~ indicator, ncol = 3, scales = "free") +
+    theme(legend.position = "none") +
+    labs(x = "",
+         y = "")
+)
+
+toc()
+beepr::beep(sound = 1)
+```
+
+Which DEF team?
+
+```{r def_choice}
+def_team <- "394"
+
+(def_choice <-
+    def05 %>% filter(id_def == def_team) %>% mutate("position" = "DEF"))
+```
+
+Take a loot at the player's statistics individually.
+
+```{r def_indv_stat}
+(
+  def_plot02 <- def_choice %>%
+    select(
+      player_team,
+      now_cost,
+      avg_points,
+      avg_minutes,
+      avg_ict,
+      avg_influence,
+      avg_xG,
+      avg_xA,
+      avg_xGChain,
+      diff_opponent
+    ) %>%
+    pivot_longer(
+      cols = 2:10,
+      names_to = "indicator",
+      values_to = "value"
+    ) %>%
+    ggplot(aes(
+      x = reorder_within(player_team, value, indicator),
+      y = value,
+      fill = factor(player_team)
+    )) +
+    geom_col() +
+    #geom_bar(stat = "identity", aes(fill = factor(id_gk))) +
+    coord_flip() +
+    scale_x_reordered() +
+    #scale_fill_viridis(discrete = TRUE) +
+    #scale_fill_manual(values = wes_palette("Darjeeling1")) +
+    scale_fill_manual(values = c("#6a4c93", "#1982c4", "#8ac926", "#ffca3a", "#ff595e")) +
+    egg::theme_article() +
+    facet_wrap( ~ indicator, ncol = 3, scales = "free") +
+    theme(legend.position = "none") +
+    labs(x = "",
+         y = "")
+)
+```
+
+## MID: A group with 5 players
+
+A group consists of 5 players.
+
+```{r mid02}
+set.seed(19) #random number
+
+mid01 <- db07 %>% filter(position_name %in% "Midfielder") %>%
+  arrange(desc(now_cost))
+
+mid_high <- mid01 %>% slice_head(prop = 0.20)
+mid_low <- mid01 %>% slice_tail(prop = 0.20)
+mid_comb <- mid_high %>%
+  bind_rows(mid_low)
+
+choose(n = mid_comb %>% summarise(n = n()) %>% as.numeric(), k = 5)
+
+tic("Time needed:")
+mid02 <- t(combn(mid_comb$player_team, 5)) #max: 5 players
+toc()
+beepr::beep(sound = 1)
+```
+
+...then combine with their statistics.
+
+```{r mid03}
+tic("Time needed:") #~218 seconds
+(
+  mid03 <- mid02 %>%
+    # na.omit() %>%
+    as_tibble() %>%
+    mutate("id_mid" = row_number()) %>%
+    relocate(id_mid) %>%
+    pivot_longer(
+      cols = 2:6,
+      names_to = "v",
+      values_to = "player_team"
+    ) %>%
+    select(-v) %>%
+    left_join(db07, by = "player_team")
+)
+toc()
+beepr::beep(sound = 1)
+```
+
+...aggregate statistics for each group.
+
+```{r mid04}
+mid04 <- readRDS("mid04.rds")
+## only Salah, no Rapinha = 831 seconds (13 minutes)
+
+# tic("Time needed:") #~48 menit
+# 
+# (
+#   mid04 <- mid03 %>%
+#     group_by(id_mid) %>%
+#     filter(any(player_team %in% c("Salah | LIV"))) %>%
+#     # filter(any(player_team %in% c("Son | TOT"))) %>%
+#     # filter(any(player_team %in% c("Yates | NFO"))) %>%
+#     filter(!any(player_team %in% c("Raphinha | LEE"))) %>%
+#     summarise(
+#       sum_price = sum(now_cost, na.rm = FALSE),
+#       #sum, because we have maximal budget
+#       sum_avgpoints = sum(avg_points, na.rm = FALSE),
+#       #sum, because we can pick 5 players
+#       avg_avgminutes = mean(avg_minutes, na.rm = FALSE),
+#       avg_avgict = mean(avg_ict, na.rm = FALSE),
+#       avg_avginfluence = mean(avg_influence, na.rm = FALSE),
+#       avg_avgXG = mean(avg_xG, na.rm = FALSE),
+#       avg_avgxA = mean(avg_xA, na.rm = FALSE),
+#       avg_avgxGChain = mean(avg_xGChain, na.rm = FALSE),
+#       avg_diffopp = mean(diff_opponent, na.rm = FALSE),
+#     ) %>%
+#     arrange(desc(sum_avgpoints),
+#             sum_price) %>%
+#     ungroup()
+# )
+# 
+# saveRDS(mid04, "mid04.rds")
+# toc()
+# beepr::beep(1)
+
+```
+
+Let's say the budget for the midfiellder position is xx.
+
+```{r mid05}
+mid05 <- readRDS("mid05.rds")
+
+# tic("Time needed:") #~43 seconds
+# (
+#   mid05 <- mid04 %>%
+#     arrange(desc(sum_avgpoints)) %>%
+#     # filter(sum_price <= 43 & sum_price > 35) %>%
+#     # slice_head(n = 5) %>%
+#     left_join(mid03, by = "id_mid") %>%
+#     relocate(id_mid, player_team)
+# )
+# toc()
+# beepr::beep(1)
+# 
+# saveRDS(mid05, "mid05.rds")
+
+(mid05u39 <- mid05 %>% 
+  arrange(desc(sum_avgpoints)) %>%
+  filter(sum_price < 39 & sum_price > 30) %>%
+  slice_head(n = 25))
+```
+
+...it's going to be easier to plot the data.
+
+```{r mid_plot}
+(
+  mid_plot01 <- mid05u39 %>%
+    select(
+      id_mid,
+      sum_price,
+      sum_avgpoints,
+      avg_avgminutes,
+      avg_avgict,
+      avg_avginfluence,
+      avg_avgXG,
+      avg_avgxA,
+      avg_avgxGChain,
+      avg_diffopp
+    ) %>%
+    group_by(id_mid) %>%
+    slice_head(n = 1) %>%
+    ungroup() %>%
+    pivot_longer(
+      cols = 2:10,
+      names_to = "indicator",
+      values_to = "value"
+    ) %>%
+    ggplot(aes(
+      x = reorder_within(id_mid, value, indicator),
+      y = value,
+      fill = factor(id_mid)
+    )) +
+    geom_col() +
+    #geom_bar(stat = "identity", aes(fill = factor(id_gk))) +
+    coord_flip() +
+    scale_x_reordered() +
+    #scale_fill_viridis(discrete = TRUE) +
+    #scale_fill_manual(values = wes_palette("Darjeeling1")) +
+    scale_fill_manual(values = c(
+      "#ef476f", "#ffd166", "#06d6a0", "#118ab2", "#073b4c"
+    )) +
+    egg::theme_article() +
+    facet_wrap(~ indicator, ncol = 3, scales = "free") +
+    theme(legend.position = "none") +
+    labs(x = "",
+         y = "")
+)
+```
+
+Which MID team?
+
+```{r mid_choice}
+mid_team <- "599531"
+
+(mid_choice <-
+    mid05 %>% filter(id_mid == mid_team) %>% mutate("position" = "MID"))
+```
+
+Take a loot at the player's statistics individually.
+
+```{r mid_indv_stat}
+(
+  mid_plot02 <- mid_choice %>%
+    select(
+      player_team,
+      now_cost,
+      avg_points,
+      avg_minutes,
+      avg_ict,
+      avg_influence,
+      avg_xG,
+      avg_xA,
+      avg_xGChain,
+      diff_opponent
+    ) %>%
+    pivot_longer(
+      cols = 2:10,
+      names_to = "indicator",
+      values_to = "value"
+    ) %>%
+    ggplot(aes(
+      x = reorder_within(player_team, value, indicator),
+      y = value,
+      fill = factor(player_team)
+    )) +
+    geom_col() +
+    #geom_bar(stat = "identity", aes(fill = factor(id_gk))) +
+    coord_flip() +
+    scale_x_reordered() +
+    #scale_fill_viridis(discrete = TRUE) +
+    #scale_fill_manual(values = wes_palette("Darjeeling1")) +
+    scale_fill_manual(values = c("#6a4c93", "#1982c4", "#8ac926", "#ffca3a", "#ff595e")) +
+    egg::theme_article() +
+    facet_wrap( ~ indicator, ncol = 3, scales = "free") +
+    theme(legend.position = "none") +
+    labs(x = "",
+         y = "")
+)
+```
+
+## FWD: A group with 3 players
+
+A group consists of 3 players.
+
+```{r fwd02}
+set.seed(19) #random number
+
+fwd01 <- db07 %>% filter(position_name %in% "Forward") %>%
+  arrange(desc(now_cost))
+
+# fwd_high <- fwd01 %>% slice_head(prop = 0.2)
+# fwd_low <- fwd01 %>% slice_tail(prop = 0.2)
+# fwd_comb <- fwd_high %>%
+#   bind_rows(fwd_low)
+
+choose(n = fwd01 %>% summarise(n = n()) %>% as.numeric(), k = 3)
+
+tic("Time needed:")
+fwd02 <- t(combn(fwd01$player_team, 3)) #max: 3 players
+toc()
+beepr::beep(sound = 1)
+```
+
+...then combine with their statistics.
+
+```{r fwd03}
+tic("Time needed:")
+(
+  fwd03 <- fwd02 %>%
+    # na.omit() %>%
+    as_tibble() %>%
+    mutate("id_fwd" = row_number()) %>%
+    relocate(id_fwd) %>%
+    pivot_longer(
+      cols = 2:4,
+      names_to = "v",
+      values_to = "player_team"
+    ) %>%
+    select(-v) %>%
+    left_join(db07, by = "player_team")
+)
+toc()
+beepr::beep(sound = 1)
+```
+
+...aggregate statistics for each group.
+
+```{r fwd04}
+# fwd04 <- readRDS("fwd04.rds")
+
+tic("Time needed:") #~48 menit
+
+(
+  fwd04 <- fwd03 %>%
+    group_by(id_fwd) %>%
+    # filter(any(player_team %in% c("Haaland | MCI"))) %>%
+    # filter(any(player_team %in% c("Jesus | ARS", "Haaland | MCI", "Richarlison | TOT"))) %>%
+    filter(any(player_team %in% c("Jesus | ARS"))) %>%  
+    filter(any(player_team %in% c("Richarlison | TOT"))) %>% 
+    summarise(
+      sum_price = sum(now_cost, na.rm = FALSE),
+      #sum, because we have maximal budget
+      sum_avgpoints = sum(avg_points, na.rm = FALSE),
+      #sum, because we can pick 5 players
+      avg_avgminutes = mean(avg_minutes, na.rm = FALSE),
+      avg_avgict = mean(avg_ict, na.rm = FALSE),
+      avg_avginfluence = mean(avg_influence, na.rm = FALSE),
+      avg_avgXG = mean(avg_xG, na.rm = FALSE),
+      avg_avgxA = mean(avg_xA, na.rm = FALSE),
+      avg_avgxGChain = mean(avg_xGChain, na.rm = FALSE),
+      avg_diffopp = mean(diff_opponent, na.rm = FALSE),
+    ) %>%
+    arrange(desc(sum_avgpoints),
+            sum_price) %>%
+    ungroup()
+)
+
+saveRDS(fwd04, "fwd04.rds")
+toc()
+beepr::beep(1)
+
+```
+
+Let's say the budget for the forwards is 20.
+
+```{r fwd05}
+tic("Time needed:") #~14 menit
+(
+  fwd05 <- fwd04 %>%
+    arrange(desc(sum_avgpoints)) %>%
+    filter(sum_price <= 21) %>%
+    slice_head(n = 5) %>%
+    left_join(fwd03, by = "id_fwd") %>%
+    relocate(id_fwd, player_team)
+)
+toc()
+beepr::beep(1)
+
+# saveRDS(fwd05, "fwd05_salah.rds")
+```
+
+...it's going to be easier to plot the data.
+
+```{r fwd_plot}
+(
+  fwd_plot01 <- fwd05 %>%
+    select(
+      id_fwd,
+      sum_price,
+      sum_avgpoints,
+      avg_avgminutes,
+      avg_avgict,
+      avg_avginfluence,
+      avg_avgXG,
+      avg_avgxA,
+      avg_avgxGChain,
+      avg_diffopp
+    ) %>%
+    group_by(id_fwd) %>%
+    slice_head(n = 1) %>%
+    ungroup() %>%
+    pivot_longer(
+      cols = 2:10,
+      names_to = "indicator",
+      values_to = "value"
+    ) %>%
+    ggplot(aes(
+      x = reorder_within(id_fwd, value, indicator),
+      y = value,
+      fill = factor(id_fwd)
+    )) +
+    geom_col() +
+    #geom_bar(stat = "identity", aes(fill = factor(id_gk))) +
+    coord_flip() +
+    scale_x_reordered() +
+    #scale_fill_viridis(discrete = TRUE) +
+    #scale_fill_manual(values = wes_palette("Darjeeling1")) +
+    scale_fill_manual(values = c("#6a4c93", "#1982c4", "#8ac926", "#ffca3a", "#ff595e")) +
+    egg::theme_article() +
+    facet_wrap(~ indicator, ncol = 3, scales = "free") +
+    theme(legend.position = "none") +
+    labs(x = "",
+         y = "")
+)
+```
+
+Which FWD team?
+
+```{r fwd_choice}
+fwd_team <- "8525"
+
+(fwd_choice <-
+    fwd05 %>% filter(id_fwd == fwd_team) %>% mutate("position" = "FWD"))
+```
+
+Take a loot at the player's statistics individually.
+
+```{r fwd_indv_stat}
+(
+  fwd_plot02 <- fwd_choice %>%
+    select(
+      player_team,
+      now_cost,
+      avg_points,
+      avg_minutes,
+      avg_ict,
+      avg_influence,
+      avg_xG,
+      avg_xA,
+      avg_xGChain,
+      diff_opponent
+    ) %>%
+    pivot_longer(
+      cols = 2:10,
+      names_to = "indicator",
+      values_to = "value"
+    ) %>%
+    ggplot(aes(
+      x = reorder_within(player_team, value, indicator),
+      y = value,
+      fill = factor(player_team)
+    )) +
+    geom_col() +
+    #geom_bar(stat = "identity", aes(fill = factor(id_gk))) +
+    coord_flip() +
+    scale_x_reordered() +
+    #scale_fill_viridis(discrete = TRUE) +
+    #scale_fill_manual(values = wes_palette("Darjeeling1")) +
+    scale_fill_manual(values = c("#6a4c93", "#1982c4", "#8ac926")) +
+    egg::theme_article() +
+    facet_wrap( ~ indicator, ncol = 3, scales = "free") +
+    theme(legend.position = "none") +
+    labs(x = "",
+         y = "")
+)
+```
+
+# Final formation
+
+Combining all the positions.
+
+```{r squad}
+(belutlistrik_squad <- (gk_choice %>% rename("id" = id_gk)) %>%
+   bind_rows((def_choice %>% rename("id" = id_def)),
+             (mid_choice %>% rename("id" = id_mid)),
+             (fwd_choice %>% rename("id" = id_fwd))
+   ) %>% 
+   mutate(
+     "formid" = row_number()
+   ) %>% 
+   relocate(id, formid, player_team, position) %>% 
+   mutate(
+     player_team = recode(player_team, "Alexander-Arnold | LIV" = "Trent | LIV")
+   )
+ )
+```
+
+Checking the total price to make sure it less than 100.
+
+```{r sum_price}
+belutlistrik_squad %>% select(player_team, position_name, now_cost) %>%
+  summarise(across(where(is.numeric), sum))
+```
+
+Finding the most ideal formation by taking a look at the best first-10 in each indicator. For example, if the first-10 (from top to bottom) consists of 4 defenders, 4 midfielders, and 2 forwards maybe we want to choose 4-4-2.
+
+```{r blselect}
+(
+  belutlistrik_select <- belutlistrik_squad %>%
+    filter(position != "GK") %>%
+    select(
+      player_team,
+      position,
+      now_cost,
+      avg_points,
+      avg_minutes,
+      avg_ict,
+      avg_influence,
+      avg_xG,
+      avg_xA,
+      avg_xGChain,
+      diff_opponent
+    ) %>%
+    pivot_longer(
+      cols = 3:10,
+      names_to = "indicator",
+      values_to = "value"
+    ) %>%
+    #mutate(
+    #  "indicator" = as.factor(indicator),
+    #  "Understat_Name" = tidytext::reorder_within(Understat_Name, value, indicator)
+    #    ) %>%
+    ggplot(aes(
+      x = reorder_within(player_team, value, indicator),
+      y = value,
+      fill = factor(position)
+    )) +
+    #geom_col(show.legend = FALSE) +
+    geom_col() +
+    #geom_bar(stat = "identity", aes(fill = factor(position))) +
+    coord_flip() +
+    scale_x_reordered() +
+    #scale_fill_viridis(discrete = TRUE) +
+    #scale_fill_manual(values = wes_palette("Darjeeling1")) +
+    scale_fill_manual(values = c("#ef476f", "#ffd166", "#06d6a0")) +
+    egg::theme_article() +
+    facet_wrap( ~ indicator, ncol = 4, scales = "free") +
+    theme(legend.position = "top",
+          legend.title = element_blank()) +
+    labs(x = "",
+         y = "")
+  #guides(fill = guide_legend("Position:"))
+)
+```
+
+...then we need to decide who are the main players. Look the order from top to bottom in `belutlistrik_squad`.
+
+```{r bloptions}
+(belutlistrik_options <- belutlistrik_squad %>% 
+   mutate(
+     "form352" = ifelse(formid %in% c(2, 6, 7, 15), "bench", "play"),
+     "form442" = ifelse(formid %in% c(2, 7, 12, 15), "bench", "play"),
+     "form343" = ifelse(formid %in% c(2, 6, 7, 12), "bench", "play")
+   ) %>% 
+   relocate(id, formid, form442, form343, form352, player_team) 
+)
+```
+
+Building the formations based on the coordinate of x and y in the plot.
+
+```{r form_choice}
+(for352 <- tibble(
+  x = c(98, 98, 83, 83, 83, 89 ,80, 68, 68, 68, 68, 68, 53, 53, 71),
+  y = c(50, 110, 25, 50, 75, 110, 110, 10, 30, 50, 70, 90, 37.5, 62.5, 110),
+  formid = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)
+))
+
+(for442 <- tibble(
+  x = c(98, 98, 83, 83, 83, 83, 89 ,68, 68, 68, 68, 80, 53, 53, 71),
+  y = c(50, 110, 20, 40, 60, 80, 110, 20, 40, 60, 80, 110, 37.5, 62.5, 110),
+  formid = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)
+))
+
+(for343 <- tibble(
+  x = c(98, 98, 83, 83, 83, 89, 80, 68, 68, 68, 68, 71, 53, 53, 53),
+  y = c(50, 110, 25, 50, 75, 110, 110, 20, 40, 60, 80, 110, 25, 50, 75),
+  formid = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)
+))
+```
+
+... assigning the choosen players to the formation.
+
+```{r blform}
+(
+  belutlistrik_442 <- belutlistrik_options %>%
+    select(formid, form442, player_team) %>%
+    right_join(for442, by = "formid")
+)
+
+(
+  belutlistrik_343 <- belutlistrik_options %>%
+    select(formid, form343, player_team) %>%
+    right_join(for343, by = "formid")
+)
+```
+
+Plotting the final formation.
+
+```{r blfinal}
+(
+  belutlistrik <- ggplot(belutlistrik_442) + #change
+    annotate_pitch(
+      colour = "white",
+      fill   = "#e0e2db",
+      limits = FALSE
+    ) +
+    geom_point(
+      aes(x = x, y = 100 - y, fill = factor(form442)), #change
+      shape = 21,
+      size = 5
+    ) +
+    scale_fill_manual(values = c("play" = "#8b2635", "bench" = "#2e3532")) +
+    geom_text_repel(
+      aes(
+        x = x,
+        y = 100 - y,
+        #label = stringr::str_wrap(player_team, 10),
+        label = player_team,
+        color = factor(form442) #change
+      ),
+      direction = "y",
+      nudge_x = -4,
+      segment.colour = NA,
+      size = 3,
+      #box.padding = unit(-2.5, "lines")
+    ) +
+    scale_color_manual(values = c("play" = "#8b2635", "bench" = "#2e3532")) +
+    theme_pitch() +
+    theme(
+      panel.background = element_rect(fill = "#e0e2db"),
+      legend.position = "none",
+      plot.title = element_text(hjust = 0, size = 18,
+                                face = "bold"),
+      plot.subtitle = element_text(hjust = 0, size = 14),
+    ) +
+    coord_flip(xlim = c(49, 101),
+               ylim = c(-12, 112)) +
+    ggtitle("Belut Listrik FC",
+            "instagram/arifpras")
+)
+
+#belutlistrik
+```
+
+# Clearing the environment
+
+```{r clearing}
+# Removes all items in Environment!
+rm(list = ls())
+ls()
+```

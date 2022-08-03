@@ -1,0 +1,276 @@
+---
+title: "Sharing session #22:"
+subtitle: "Analysing Fantasy Premier League data in R"
+author: 'Arif P. Sulistiono'
+date: '<br>Tuesday, 4 August 2022<br> <a href="https://www.instagram.com/mof.dac"> <i class="fa fa-instagram fa-fw"></i>mof.dac</a>'
+output:
+  xaringan::moon_reader:
+    css: [default, metropolis, metropolis-fonts, custom.css]
+    nature:
+      #seal: false
+      slideNumberFormat: "%current%"
+      highlightStyle: github
+      highlightLines: true
+      ratio: 16:9
+      countIncrementalSlides: true
+      #titleSlideClass: [bottom, left]
+      beforeInit: ["macros.js", "https://platform.twitter.com/widgets.js"]
+---
+
+```{r xaringan-themer, warning=FALSE, include=FALSE}
+library(xaringanthemer)
+#remotes::install_github("mitchelloharawild/icons", force = TRUE)
+#download_fontawesome()
+#download_ionicons()
+#download_academicons()
+#download_simple_icons()
+#download_bioicons()
+#download_google_material()
+#download_feather_icons()
+#download_octicons()
+library("icons")
+#https://github.com/mitchelloharawild/icons
+
+# install.packages("devtools")
+#devtools::install_github("gadenbuie/xaringanExtra")
+library("xaringanExtra")
+
+#install.packages("webshot")
+#webshot::install_phantomjs()
+library("webshot")
+library("usethis")
+```
+
+```{r setup, include=FALSE}
+options(htmltools.dir.version = FALSE)
+knitr::opts_chunk$set(fig.width = 6, fig.asp = 0.618, out.width = "50%", fig.align = "center", fig.retina = 3, warning = FALSE, message = FALSE)
+```
+
+```{r xaringanExtra-clipboard, echo=FALSE}
+htmltools::tagList(
+  xaringanExtra::use_clipboard(
+    button_text = "<i class=\"fa fa-clipboard\"></i>",
+    success_text = "<i class=\"fa fa-check\" style=\"color: #90BE6D\"></i>",
+    error_text = "<i class=\"fa fa-times-circle\" style=\"color: #F94144\"></i>"
+  ),
+  rmarkdown::html_dependency_font_awesome()
+)
+```
+
+```{r xaringan-panelset, echo=FALSE}
+xaringanExtra::use_panelset()
+```
+
+```{r xaringanExtra-freezeframe, echo=FALSE}
+xaringanExtra::use_freezeframe()
+```
+
+```{r xaringan-extra-styles, echo = FALSE}
+xaringanExtra::use_extra_styles(
+  hover_code_line = TRUE,         #<<
+  mute_unhighlighted_code = TRUE  #<<
+)
+```
+
+```{r xaringanExtra, echo = FALSE}
+xaringanExtra::use_progress_bar(color = "orange", location = "top")
+```
+
+# About me
+.center[
+![:scale 50%](https://media.giphy.com/media/1334O1WETb3sIM/giphy.gif)
+
+An employee of the Republic of Indonesia’s Ministry of Finance. Funded by the Indonesia Endowment Fund for Education ("Lembaga Pengelola Dana Pendidikan"), at the moment, on study leave to join a PhD program in the <a href="https://www.nottingham.ac.uk/economics/people/arif.sulistiono">School of Economics, the University of Nottingham</a> with research interests in Indonesia's government bonds market and their bondholders' behaviour. Also a research assistant at <a href="https://www.tracktheeconomy.ac.uk/arif-sulistiono">tracktheeconomy.ac.uk</a>. <br> <br>
+<a href="mailto:ap.sulistiono@gmail.com"><i class="fa fa-envelope fa-fw"></i></a></a> <a href="https://www.facebook.com/arifpras"> <i class="fa fa-facebook fa-fw"></i></a> <a href="https://github.com/arifpras"><i class="fa fa-github fa-fw"></i></a> <a href="https://www.instagram.com/arifpras"> <i class="fa fa-instagram fa-fw"></i></a> <a href="https://arifpras.medium.com/"> <i class="fa fa-medium fa-fw"></i></a> <a href="https://twitter.com/arifpras"> <i class="fa fa-twitter fa-fw"></i></a> <a href="https://arifpras.com"> <i class="fa fa-wordpress fa-fw"></i></a>
+]
+
+---
+# Limitations
+
+.panelset[
+
+.panel[.panel-name[1: Data availability]
+* Historical statistics from previous seasons: 2020/2021 and 2021/2022
+
+* Not included:
+    + Pre-season matches
+    + New players (i.e., Erling Haaland, Ivan Perišić, Kalidou Koulibaly, etc.)
+    + New teams (i.e., Fulham, Bournemouth, Nottingham Forest)
+]
+
+.panel[.panel-name[2: Specifications]
+* Software: RStudio 2022.07.1+554 "Spotted Wakerobin" Release for macOS
+    + Alternative: Atom 1.60.0 x64
+    
+* Hardware: MBP 2020, chip M1, memory 16 GB.
+    + Alternative: Cloud Computing Services - Amazon Web Services (AWS)
+    + Multiple choices, depends on the price.
+]
+
+]
+
+.left[.footnote[.small[Source: https://www.rstudio.com/products/rstudio/download/; https://ec2instances.github.io/]]]
+---
+
+# Today's session
+
+* Web scrapping
+    + library: dplyr, jsonlite, rvest
+    + functions: read_csv(), fromJSON(), read_html()
+    
+* Data wrangling
+    + library: dplyr
+    + functions: mutate(), left_join(), right_join(), rename(), group_by() and ungroup(), select(), bind_rows(), etc.
+    
+* Data visualisation
+    + library: ggplot2, tidyr, viridis, ggrepel, ggsoccer
+    + functions: geom_col(), reorder_within(), scale_fill_manual(), scale_fill_viridis, etc.
+    
+* Basic statistics
+    + library: dplyr, corrr
+    + library: mean(), sum(), correlate(), combn(), choose(), etc.
+---
+
+# Previous lessons: Data Wrangling and Visualisation
+
+```{r echo = FALSE, fig.width = 6, fig.asp = 0.618, out.width = "100%", fig.align = "center", fig.retina = 3}
+
+knitr::include_url("https://arifpras.github.io/WranglingViz/")
+```
+
+.left[.footnote[.small[Source: https://arifpras.github.io/WranglingViz/]]]
+
+---
+# Previous lessons: Basic Modelling
+
+```{r echo = FALSE, fig.width = 6, fig.asp = 0.618, out.width = "100%", fig.align = "center", fig.retina = 3}
+
+knitr::include_url("https://arifpras.github.io/BasicModelling/")
+```
+
+.left[.footnote[.small[Source: https://arifpras.github.io/BasicModelling/]]]
+---
+
+# General rules
+
+* Budget constraints = £100.0 for 15 players
+    + 2 goalkeepers
+    + 5 defenders
+    + 5 midfielders
+    + 3 forwards
+
+* Chips
+    + Bench boost: once a season, bench players' points included in the total points.
+    + Free hit: once a season, unlimited transfers for a single Gameweek.
+    + Triple captain: once a season, tripled the captain's points instead of doubled.
+    + Wild card: twice a season, Gameweek 1 to 16 and Gameweek 17 to 38.
+    
+* Gameweek 1 deadline: Friday, 5 Aug 18:30 BST
+* Total managers (as of 3 August 2022): 5,592,326 managers
+
+---
+
+# Initial budgeting plan and data sources
+
+## Allocating the budget
+
+* Goalkeepers: £9.0 for 2 players.
+
+* Outfield players: £91.0 for 13 players.
+    + Defenders: £35.0 for 5 players.
+    + Midfielders: £35.0 for 5 players.
+    + Forwards: £21.0 for 3 players.
+
+* Left £0.00 in the bank (less flexibility)
+
+## Data sources:
+
+* vaastav's Github: https://github.com/vaastav/Fantasy-Premier-League
+* FPL data set: https://fantasy.premierleague.com/api/bootstrap-static/
+* Fixtures: https://fixturedownload.com/results/epl-2022
+
+---
+
+# Another consideration
+
+```{r echo = FALSE, fig.width = 6, fig.asp = 0.618, out.width = "100%", fig.align = "center", fig.retina = 3}
+
+knitr::include_url("https://pbs.twimg.com/media/FZHCGpIWQAE2DeV?format=jpg")
+```
+
+.left[.footnote[.small[Source: https://twitter.com/HollyShand/status/1554523674140495872]]]
+    
+---
+class: center, inverse, middle
+
+.center[
+![:scale 50%](https://media.giphy.com/media/RDKPVBPMfNA7m/giphy.gif)
+]
+.large[<span style="color:orange"> Let's practice! </span>]
+<br>
+.small[open "BelutListik.qmd" in RStudio]
+
+---
+
+# Disclaimers
+
+* Based on the previous seasons' statistics. 
+    + Re-run the codes after several matches in the next season.
+    + The data set needs to be updated frequently (i.e., every two Gameweeks).
+
+* The Summer 2022 Transfer Window for Premier League clubs will close at 23:00 BST on 1 September 2022.
+    + A possible move of Mark Cucurella (BHA, £5.0) to Chelsea.
+
+* Limitations in the computer memory make the analysis could not cover all possible choices: Use a higher specifications (memory >60 GB).
+
+* World Cup 2022: Including players involved in the competition or not?
+
+* Belut Listrik's statistics in the last season:
+    + Overall points: 2,414
+    + Overall rank: 272,435 of 9,167,407 teams
+
+---
+
+class: center, inverse, middle
+
+
+.large[
+<span style="color:orange"> **Invite me to your mini league, maybe?** </span>
+]
+
+
+**or you could join**
+
+
+@standupindo_kemenkeu X @ajikpurnomoputro: <span style="color:white">**hwf84k**</span>
+
+---
+
+class: center, middle, clear
+
+.center[
+![:scale 50%](https://media.giphy.com/media/dn07GR9ZYHqJUxaqzp/giphy.gif)
+]
+
+.large[
+Thank you for listening.
+]
+.small[**All teaching materials will be available on https://github.com/arifpras/BelutListrik**]
+
+.small[
+Slides created via the R packages:
+[**xaringan**](https://github.com/yihui/xaringan) and
+[gadenbuie/xaringanthemer](https://github.com/gadenbuie/xaringanthemer). <br>
+The chakra comes from [remark.js](https://remarkjs.com), [**knitr**](http://yihui.name/knitr), and [R Markdown](https://rmarkdown.rstudio.com).
+]
+
+---
+
+# Acknowledgements
+
+*   Grolemund, G., & Wickham, H. (2017). R for Data Science. O’Reilly Media.
+*   R Core Team (2019). R: A language and environment for statistical computing. R Foundation for Statistical Computing, Vienna, Austria. URL https://www.R-project.org/
+*   Wickham et al., (2019). Welcome to the tidyverse. Journal of Open Source Software, 4(43), 1686, https://doi.org/10.21105/joss.01686
+*   Claus O. Wilke: Data Visualization in R, https://wilkelab.org/SDS375/
+*   Cedric Scherer's personal blog: https://www.cedricscherer.com/
+*   ...and other sources i.e. stackoverflow.com, github.com, etc.
