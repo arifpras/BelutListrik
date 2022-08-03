@@ -25,7 +25,7 @@ Allan Marques Loureiro,Everton,3,Midfielder,5,EVE,Allan Marques Loureiro,MID,171
 Allan Saint-Maximin,Newcastle,3,Midfielder,6.5,NEW,Allan Saint-Maximin,FWD,307,Allan Saint-Maximin
 Alphonse Areola,West Ham,3,Goalkeeper,4.5,WHU,Alphonse Areola,GK,489,Alphonse Areola
 André Tavares Gomes,Everton,3,Midfielder,4.5,EVE,André Filipe Tavares Gomes,MID,172,André Gomes
-Andreas Hoelgebaum Pereira,Man Utd,4,Midfielder,4.5,MUN,Andreas Pereira,MID,511,Andreas Pereira
+Andreas Hoelgebaum Pereira,Fulham,4,Midfielder,4.5,FUL,Andreas Pereira,MID,511,Andreas Pereira
 Andrew Robertson,Liverpool,5,Defender,7,LIV,Andrew Robertson,DEF,234,Andrew Robertson
 Andros Townsend,Everton,3,Midfielder,5.5,EVE,Andros Townsend,MID,482,Andros Townsend
 Angelo Ogbonna,West Ham,3,Defender,4.5,WHU,Angelo Ogbonna,DEF,409,Angelo Ogbonna
@@ -49,7 +49,7 @@ Ben Johnson,West Ham,3,Defender,4.5,WHU,Ben Johnson,DEF,425,Ben Johnson
 Ben Pearson,Bournemouth,2,Midfielder,4.5,BOU,,,,
 Benjamin White,Arsenal,4,Defender,4.5,ARS,Ben White,DEF,67,Ben White
 Bernardo Veiga de Carvalho e Silva,Man City,5,Midfielder,7,MCI,Bernardo Mota Veiga de Carvalho e Silva,MID,261,Bernardo Silva
-Bernd Leno,Arsenal,4,Goalkeeper,4.5,ARS,Bernd Leno,GK,1,Bernd Leno
+Bernd Leno,Fulham,4,Goalkeeper,4.5,FUL,Bernd Leno,GK,1,Bernd Leno
 Bertrand Traoré,Aston Villa,3,Midfielder,5,AVL,Bertrand Traoré,MID,32,Bertrand Traoré
 Billy Gilmour,Chelsea,4,Midfielder,4.5,CHE,Billy Gilmour,MID,145,Billy Gilmour
 Bobby De Cordova-Reid,Fulham,2,Midfielder,5.5,FUL,,,,
@@ -372,7 +372,7 @@ Niels Nkounkou,Everton,3,Defender,4,EVE,Niels Nkounkou,DEF,570,Niels Nkounkou
 Nikola Vlasic,West Ham,3,Midfielder,5,WHU,Nikola Vlasic,MID,582,Nikola Vlasic
 Nuno Varela Tavares,Arsenal,4,Defender,4.5,ARS,Nuno Varela Tavares,DEF,466,Nuno Tavares
 Odsonne Edouard,Crystal Palace,3,Forward,5.5,CRY,Odsonne Edouard,FWD,586,Odsonne Edouard
-Oleksandr Zinchenko,Man City,5,Defender,5,MCI,Oleksandr Zinchenko,DEF,264,Oleksandr Zinchenko
+Oleksandr Zinchenko,Arsenal,5,Defender,5,ARS,Oleksandr Zinchenko,DEF,264,Oleksandr Zinchenko
 Oliver Skipp,Spurs,4,Midfielder,4.5,TOT,Oliver Skipp,MID,373,Oliver Skipp
 Ollie Watkins,Aston Villa,3,Forward,7.5,AVL,Ollie Watkins,FWD,40,Ollie Watkins
 Oriol Romeu Vidal,Southampton,3,Midfielder,5,SOU,Oriol Romeu Vidal,MID,335,Oriol Romeu
@@ -527,3 +527,33 @@ Lewis O'Brien,Nott'm Forest,2,Midfielder,5,NFO,,,,
 Jesse Lingard,Nott'm Forest,2,Midfielder,6,NFO,Jesse Lingard,MID,276,Jesse Lingard
 Sékou Mara,Southampton,3,Forward,5.5,SOU,,,,
 Djed Spence,Spurs,4,Defender,4.5,TOT,,,,
+Kaine Kesler Hayden,Aston Villa,3,Defender,4,AVL,,,,
+Ashley Young,Aston Villa,3,Defender,4.5,AVL,Ashley Young,DEF,52,Ashley Young
+Marcus Tavernier,Bournemouth,2,Midfielder,5,BOU,,,,
+James Hill,Bournemouth,2,Defender,4.5,BOU,,,,
+Fin Stevens,Brentford,3,Defender,4,BRE,,,,
+Halil Dervişoğlu,Brentford,3,Forward,4.5,BRE,,,,
+Kjell Scherpen,Brighton,3,Goalkeeper,4,BHA,,,,
+Matt Clarke,Brighton,3,Defender,4,BHA,,,,
+Jan Paul van Hecke,Brighton,3,Defender,4,BHA,,,,
+Emerson Palmieri dos Santos,Chelsea,4,Defender,4,CHE,Emerson Palmieri dos Santos,DEF,539,Emerson
+Chris Richards,Crystal Palace,3,Defender,4.5,CRY,,,,
+Rúben Nascimento Vinagre,Everton,3,Defender,4.5,EVE,,,,
+Dwight McNeil,Everton,3,Midfielder,5.5,EVE,Dwight McNeil,MID,118,Dwight McNeil
+Kevin Mbabu,Fulham,2,Defender,4.5,FUL,,,,
+Luke Harris,Fulham,2,Midfielder,4.5,FUL,,,,
+Daniel Iversen,Leicester,3,Goalkeeper,4,LEI,,,,
+Dennis Praet,Leicester,3,Midfielder,5,LEI,Dennis Praet,MID,206,Dennis Praet
+Cody Drameh,Leeds,2,Defender,4,LEE,Cody Drameh,DEF,562,Cody Drameh
+Lisandro Martínez,Man Utd,4,Defender,4.5,MUN,,,,
+Amad Diallo,Man Utd,4,Midfielder,4.5,MUN,Amad Diallo,MID,636,Amad Diallo Traore
+Zidane Iqbal,Man Utd,4,Midfielder,4.5,MUN,,,,
+Elliot Anderson,Newcastle,3,Midfielder,4.5,NEW,Elliot Anderson,MID,609,Elliot Anderson
+Orel Mangala,Nott'm Forest,2,Midfielder,5,NFO,,,,
+Oliver Hammond,Nott'm Forest,2,Midfielder,4.5,NFO,,,,
+Bryan Gil Salvatierra,Spurs,4,Midfielder,5,TOT,Bryan Gil Salvatierra,MID,487,Bryan Gil Salvatierra
+Gianluca Scamacca,West Ham,3,Forward,7,WHU,,,,
+Harrison Ashby,West Ham,3,Defender,4,WHU,Harrison Ashby,DEF,617,Harrison Ashby
+Conor Coventry,West Ham,3,Midfielder,4.5,WHU,,,,
+Jackson Smith,Wolves,3,Goalkeeper,4,WOL,,,,
+Hugo Bueno López,Wolves,3,Defender,4,WOL,,,,
