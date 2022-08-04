@@ -185,7 +185,7 @@ knitr::include_url("https://arifpras.github.io/BasicModelling/")
 
 ## Data sources:
 
-* vaastav's Github: https://github.com/vaastav/Fantasy-Premier-League
+* vaastav's Github: https://github.com/vaastav/Fantasy-Premier-League/
 * FPL data set: https://fantasy.premierleague.com/api/bootstrap-static/
 * Fixtures: https://fixturedownload.com/results/epl-2022
 

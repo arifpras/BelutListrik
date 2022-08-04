@@ -31,7 +31,7 @@ pacman::p_load(tidyverse,
 options(tz = "Europe/London")
 
 # Working directory
-setwd("~/Dropbox/BelutListrik")
+setwd("~/OneDrive - The University of Nottingham/BB_SideProject/BelutListrik")
 ```
 
 # Building database
@@ -217,7 +217,7 @@ dict01 <-
     ))
 
 # Check duplicated players based on their positions
-dict05 %>% group_by(name) %>% filter(n()>1)
+dict05 %>% group_by(name) %>% filter(n()>1) %>% ungroup()
 
 # Stuart Dallas: DEF
 # Matt Ritchie: DEF
@@ -427,11 +427,13 @@ Now, we can merge all information from the official website.
 
 ```
 
-```{r db04_before}
-# db03 <-
-#   "https://raw.githubusercontent.com/arifpras/BelutListrik/main/idlist2223.csv?token=GHSAT0AAAAAABVVEBDPPBAPWETEY5M6KECIYWJXFZA"
+...synchronising new players (previous seasons vs upcoming season) and taking care the latest transfers (up to 3 August 2022), which have not been included in the database.
 
-db03 <- "~/OneDrive - The University of Nottingham/BB_SideProject/BelutListrik/idlist2223.csv"
+```{r db04_before}
+db03 <-
+  "https://raw.githubusercontent.com/arifpras/BelutListrik/main/idlist2223.csv"
+
+# db03 <- "~/OneDrive - The University of Nottingham/BB_SideProject/BelutListrik/idlist2223.csv"
 
 (db04 <- read_csv(db03, show_col_types = FALSE))
 ```
@@ -464,7 +466,7 @@ db03 <- "~/OneDrive - The University of Nottingham/BB_SideProject/BelutListrik/i
 ## No index
 # xlsx::write.xlsx(
 #   as.data.frame(db02_db04),
-#   file = "20220726_matching.xlsx",
+#   file = "20220803_matching.xlsx",
 #   sheetName = "new",
 #   col.names = TRUE,
 #   row.names = FALSE,
@@ -477,6 +479,22 @@ db03 <- "~/OneDrive - The University of Nottingham/BB_SideProject/BelutListrik/i
 db03 <- "~/OneDrive - The University of Nottingham/BB_SideProject/BelutListrik/idlist2223.csv"
 
 (db04 <- read_csv(db03, show_col_types = FALSE))
+
+# (
+#   db04 <- db02 %>%
+#     bind_rows(db02_db04) %>%
+#     arrange(full_name) %>% 
+#     distinct(full_name, team_name, .keep_all = TRUE)
+# )
+
+db04 %>% 
+  arrange(full_name) %>% 
+  group_by(full_name, team_name) %>% filter(n() > 1) %>% 
+  ungroup()
+
+# save(db04,
+#      file = "12_db04.rdata")
+# load("12_db04.rdata")
 ```
 
 Combining all players' statistics.
@@ -489,14 +507,16 @@ Combining all players' statistics.
 
 str(db05)
 
-# (db06 <- extract(db05, full_name, c("first_name", "last_name"), "([^ ]+) (.*)"))
-
 (
   db06 <- db05 %>%
     left_join(db02 %>% select(full_name, web_name, team_name), by = c("full_name", "team_name")) %>%
     select(-short_name,-name,-FPL_ID,-FPL_Name, -Understat_Name,-Understat_ID) %>%
     relocate(full_name, web_name)
 )
+
+# save(db05, db06,
+#      file = "13_db05.rdata")
+# load("13_db05.rdata")
 ```
 
 ## Fixture difficulty
@@ -504,6 +524,8 @@ str(db05)
 First, we need to obtain the upcoming fixtures. Another web-screapping will be done on the following website <https://fixturedownload.com/results/epl-2022>.
 
 ```{r fixture}
+# install an add-onn 'SelectorGadget' on Chrome
+
 fixt00 <- "https://fixturedownload.com/results/epl-2022"
 fixt01 <- read_html(fixt00)
 
@@ -520,6 +542,10 @@ fixt05 <- data.frame(fixt04)
     as.data.frame(matrix(
       fixt05$fixt04, ncol = 6, byrow = TRUE
     )))
+
+# save(fixt01, fixt02, fixt03, fixt05, fixt06,
+#      file = "14_fixt06.rdata")
+# load("14_fixt06.rdata")
 ```
 
 Then, we will combine the fixtures with each team's strength.
@@ -539,10 +565,12 @@ Then, we will combine the fixtures with each team's strength.
     ) %>%
     left_join(tm01, by = c("away" = "name")) %>%
     select(-id,-short_name) %>%
-    rename(diff_away = strength)  %>%
+    rename(diff_away = strength)  %>% 
+    # ~ how much the difficulty facing the away team?
     left_join(tm01, by = c("home" = "name")) %>%
     select(-id,-short_name) %>%
     rename(diff_home = strength)
+  # ~ how much the difficulty facing the home team?
 )
 
 (
@@ -568,20 +596,25 @@ Then, we will combine the fixtures with each team's strength.
     )
 )
 
+# save(st01, st02, st03, st04,
+#      file = "15_strength.rdata")
+# load("15_strength.rdata")
 ```
 
-Now, we want to aggregate level of difficulty in the next 8 matches (before the World Cup).
+Now, we want to aggregate level of difficulty in the next 8 matches (the World Cup will start after Gameweek 16).
 
-```{r diff_9matches}
+```{r diff_8matches}
 (diff01 <- st04 %>%
    arrange(team, gameweek) %>%
-   filter(gameweek < 9) %>%
+   filter(gameweek <= 8) %>%
    group_by(team) %>%
    summarise(diff_opponent = mean(opponent_diff)) %>%
    ungroup() %>% 
    arrange(diff_opponent))
 
-# st04 %>% filter(gameweek < 10) %>% arrange(team, gameweek)
+# save(diff01,
+#      file = "16_diff_8matches.rdata")
+# load("16_diff_8matches.rdata")
 ```
 
 Combining the next 8 matches difficulty to players' statistics.
@@ -611,11 +644,13 @@ Combining the next 8 matches difficulty to players' statistics.
     mutate_if(is.numeric , replace_na, replace = 0)
 )
 
-# saveRDS(db07, file = "db07.rds")
-# 
+# save(db07,
+#      file = "17_db07_final.rdata")
+# load("17_db07_final.rdata")
+
 # xlsx::write.xlsx(
 #   db07,
-#   file = "20220726_fpl.xlsx",
+#   file = "20220803_fpl.xlsx",
 #   sheetName = "db07",
 #   col.names = TRUE,
 #   row.names = TRUE,
@@ -647,13 +682,17 @@ Combining the next 8 matches difficulty to players' statistics.
       Goalkeeper, Defender, Midfielder, Forward
     )
 )
+
+# save(pos01,
+#      file = "18_pos01.rdata")
+# load("17_db07_final.rdata")
 ```
 
 How many combinations (without repetition) will we have?
 
 $C_{k}(n) = \binom{n}{k} = \frac{n!}{k!(n-k)!}$, where
 
-n = Elements to choose from (i.e., GK = 52 players available)
+n = Elements to choose from (i.e., GK = 55 players available)
 
 k = Elements chosen (i.e., maximum GK in the team = 2)
 
@@ -695,7 +734,7 @@ Goalkeeper = `r toString(gk_choose)` Defender = `r toString(def_choose)` Midfiel
 First we want to make a group consists of 2 players.
 
 ```{r gk02}
-tic("Time needed:")
+tic("Time needed:") # 0.023 sec elapsed
 set.seed(19) #random number
 
 gk01 <- db07 %>% filter(position_name %in% "Goalkeeper")
@@ -703,12 +742,16 @@ gk02 <-  t(combn(gk01$player_team, 2)) #max: 2 players
 
 toc()
 beepr::beep(sound = 1)
+
+# save(gk02,
+#      file = "18_gk02.rdata")
+# load("18_gk02.rdata")
 ```
 
 ...then combine with their statistics.
 
 ```{r gk03}
-tic("Time needed:")
+tic("Time needed:") # 0.099 sec elapsed
 
 (
   gk03 <- gk02 %>%
@@ -732,13 +775,12 @@ beepr::beep(sound = 1)
 ...aggregate statistics for each group.
 
 ```{r gk04}
-tic("Time needed:")
+tic("Time needed:") #0.089 sec elapsed
 
 (
   gk04 <- gk03 %>%
     group_by(id_gk) %>%
-    #filter(!any(player_team == "Alisson | LIV" | player_team == "Ederson | MCI")) %>% #No Alisson
-    filter(any(player_team == "Mendy | CHE")) %>% #Mendy is a must
+    # filter(any(player_team == "Mendy | CHE")) %>% #Mendy is a must
     summarise(
       sum_price = sum(now_cost, na.rm = FALSE),
       #sum, because we have maximal budget
@@ -764,15 +806,15 @@ toc()
 beepr::beep(sound = 1)
 ```
 
-Let's say the budget for the goalkeeper position is 10.
+Let's say the budget for the goalkeeper position is 9
 
 ```{r gk05}
-tic("Time needed:")
+tic("Time needed:") #0.028 sec elapsed
 
 (
   gk05 <- gk04 %>%
     arrange(desc(sum_avgpoints)) %>%
-    filter(sum_price <= 9.5) %>% #restrict the price
+    filter(sum_price <= 9) %>% #restrict the price
     slice_head(n = 5) %>% #the closest to 10
     left_join(gk03, by = "id_gk") %>% 
     relocate(id_gk, player_team)
@@ -832,7 +874,7 @@ beepr::beep(sound = 1)
 Which GK team?
 
 ```{r gk_choice}
-gk_team <- "666"
+gk_team <- "943"
 
 (gk_choice <-
     gk05 %>% filter(id_gk == gk_team) %>% mutate("position" = "GK"))
@@ -897,16 +939,20 @@ def_comb <- def_high %>%
 
 choose(n = def_comb %>% summarise(n = n()) %>% as.numeric(), k = 5)
 
-tic("Time needed:")
+tic("Time needed:") # 15.571 sec elapsed
 def02 <- t(combn(def_comb$player_team, 5)) #max: 5 players
 toc()
 beepr::beep(sound = 1)
+
+# save(def02,
+#      file = "19_def02.rdata")
+# load("19_def02.rdata")
 ```
 
 ...then combine with their statistics.
 
 ```{r def03}
-tic("Time needed:")
+tic("Time needed:") # 67.503 sec elapsed
 (
   def03 <- def02 %>%
     # na.omit() %>%
@@ -925,22 +971,26 @@ toc()
 beepr::beep(sound = 1)
 ```
 
+```{r}
+# save(def03,
+#      file = "20_def03.rdata")
+# load("20_def03.rdata")
+
+# saveRDS(def03,
+#         file = "20_def03.rds")
+
+# tic("Time needed:") # 201.467 sec elapsed
+# def03 <- readRDS("20_def03.rds")
+# toc()
+```
+
 ...aggregate statistics for each group.
 
 ```{r def04}
-tic("Time needed:") #~3 menit
+tic("Time needed:") # 306.567 sec elapsed
 (
   def04 <- def03 %>%
     group_by(id_def) %>%
-    # filter(any(
-    #   player_team %in% c("Alexander-Arnold | LIV") #~3 menit
-    # )) %>%
-    # filter(any(
-    #   player_team %in% c("Cancelo | MCI") # separated 56 sec, combine 94 sec
-    # )) %>%        
-    # filter(any(
-    #   player_team %in% c("Perišić | TOT") # separated 56 sec, combine 94 sec
-    # )) %>%
     filter(any(
       player_team %in% c("N.Williams | NFO") # separated 56 sec, combine 94 sec
     )) %>%
@@ -965,15 +1015,31 @@ toc()
 beepr::beep(1)
 ```
 
-Let's say the budget for the defender position is 30.
+```{r}
+# save(def04,
+#      file = "21_def04.rdata")
+
+tic("Time needed:") #0.318 sec elapsed
+load("~/OneDrive - The University of Nottingham/BB_SideProject/BelutListrik/21_def04.rdata")
+toc()
+
+# saveRDS(def04,
+#         file = "21_def04.rds")
+
+# tic("Time needed:")
+# def04 <- readRDS("21_def04.rds")
+# toc()
+```
+
+Let's say the budget for the defender position is £35.0.
 
 ```{r def05}
-tic("Time needed:")
+tic("Time needed:") # 20.069 sec elapsed
 
 (
   def05 <- def04 %>%
     arrange(desc(sum_avgpoints)) %>%
-    filter(sum_price <= 34.5 & sum_price > 20) %>%
+    filter(sum_price <= 35 & sum_price > 20) %>%
     slice_head(n = 5) %>%
     left_join(def03, by = "id_def") %>%
     relocate(id_def, player_team)
@@ -983,10 +1049,19 @@ toc()
 beepr::beep(sound = 1)
 ```
 
+```{r}
+# saveRDS(def05,
+#         file = "22_def05.rds")
+
+tic("Time needed:")
+def05 <- readRDS("/~/OneDrive - The University of Nottingham/BB_SideProject/BelutListrik/22_def05.rds")
+toc()
+```
+
 ...it's going to be easier to plot the data.
 
 ```{r def_plot}
-tic("Time needed:")
+tic("Time needed:") #2.157 sec elapsed
 
 (
   def_plot01 <- def05 %>%
@@ -1041,7 +1116,7 @@ beepr::beep(sound = 1)
 Which DEF team?
 
 ```{r def_choice}
-def_team <- "394"
+def_team <- "434"
 
 (def_choice <-
     def05 %>% filter(id_def == def_team) %>% mutate("position" = "DEF"))
@@ -1106,16 +1181,25 @@ mid_comb <- mid_high %>%
 
 choose(n = mid_comb %>% summarise(n = n()) %>% as.numeric(), k = 5)
 
-tic("Time needed:")
+tic("Time needed:") # 50.396 sec elapsed
 mid02 <- t(combn(mid_comb$player_team, 5)) #max: 5 players
 toc()
 beepr::beep(sound = 1)
 ```
 
+```{r}
+# save(mid02,
+#      file = "23_mid02.rdata")
+
+tic("Time needed:") # 49.442 sec elapsed
+load("~/OneDrive - The University of Nottingham/BB_SideProject/BelutListrik/23_mid02.rdata")
+toc()
+```
+
 ...then combine with their statistics.
 
 ```{r mid03}
-tic("Time needed:") #~218 seconds
+tic("Time needed:") # 196.508 sec elapsed
 (
   mid03 <- mid02 %>%
     # na.omit() %>%
@@ -1134,75 +1218,90 @@ toc()
 beepr::beep(sound = 1)
 ```
 
+```{r}
+# save(mid03,
+#      file = "24_mid03.rdata")
+
+tic("Time needed:") # 471.272 sec elapsed
+load("~/OneDrive - The University of Nottingham/BB_SideProject/BelutListrik/24_mid03.rdata")
+toc()
+
+# saveRDS(mid03,
+#         file = "24_mid03.rds")
+# mid03 <- readRDS("24_mid03.rds")
+```
+
 ...aggregate statistics for each group.
 
 ```{r mid04}
-mid04 <- readRDS("mid04.rds")
-## only Salah, no Rapinha = 831 seconds (13 minutes)
+tic("Time needed:") #
 
-# tic("Time needed:") #~48 menit
-# 
-# (
-#   mid04 <- mid03 %>%
-#     group_by(id_mid) %>%
-#     filter(any(player_team %in% c("Salah | LIV"))) %>%
-#     # filter(any(player_team %in% c("Son | TOT"))) %>%
-#     # filter(any(player_team %in% c("Yates | NFO"))) %>%
-#     filter(!any(player_team %in% c("Raphinha | LEE"))) %>%
-#     summarise(
-#       sum_price = sum(now_cost, na.rm = FALSE),
-#       #sum, because we have maximal budget
-#       sum_avgpoints = sum(avg_points, na.rm = FALSE),
-#       #sum, because we can pick 5 players
-#       avg_avgminutes = mean(avg_minutes, na.rm = FALSE),
-#       avg_avgict = mean(avg_ict, na.rm = FALSE),
-#       avg_avginfluence = mean(avg_influence, na.rm = FALSE),
-#       avg_avgXG = mean(avg_xG, na.rm = FALSE),
-#       avg_avgxA = mean(avg_xA, na.rm = FALSE),
-#       avg_avgxGChain = mean(avg_xGChain, na.rm = FALSE),
-#       avg_diffopp = mean(diff_opponent, na.rm = FALSE),
-#     ) %>%
-#     arrange(desc(sum_avgpoints),
-#             sum_price) %>%
-#     ungroup()
-# )
-# 
-# saveRDS(mid04, "mid04.rds")
-# toc()
-# beepr::beep(1)
+(
+  mid04 <- mid03 %>%
+    group_by(id_mid) %>%
+    filter(any(player_team %in% c("Salah | LIV"))) %>%
+    filter(!any(player_team %in% c("Raphinha | LEE"))) %>%
+    summarise(
+      sum_price = sum(now_cost, na.rm = FALSE),
+      #sum, because we have maximal budget
+      sum_avgpoints = sum(avg_points, na.rm = FALSE),
+      #sum, because we can pick 5 players
+      avg_avgminutes = mean(avg_minutes, na.rm = FALSE),
+      avg_avgict = mean(avg_ict, na.rm = FALSE),
+      avg_avginfluence = mean(avg_influence, na.rm = FALSE),
+      avg_avgXG = mean(avg_xG, na.rm = FALSE),
+      avg_avgxA = mean(avg_xA, na.rm = FALSE),
+      avg_avgxGChain = mean(avg_xGChain, na.rm = FALSE),
+      avg_diffopp = mean(diff_opponent, na.rm = FALSE),
+    ) %>%
+    arrange(desc(sum_avgpoints),
+            sum_price) %>%
+    ungroup()
+)
 
+toc()
+beepr::beep(1)
 ```
 
-Let's say the budget for the midfiellder position is xx.
+```{r}
+# saveRDS(mid04,
+#         file = "25_mid04.rds")
+
+tic("Time needed:") # 0.508 sec elapsed
+mid04 <- readRDS("~/OneDrive - The University of Nottingham/BB_SideProject/BelutListrik/25_mid04.rds")
+toc()
+```
+
+Let's say the budget for the midfielder position is £38.5.
 
 ```{r mid05}
-mid05 <- readRDS("mid05.rds")
+tic("Time needed:") #119.773 sec elapsed
+(
+  mid05 <- mid04 %>%
+    arrange(desc(sum_avgpoints)) %>%
+    filter(sum_price <= 38.5 & sum_price > 30) %>%
+    slice_head(n = 5) %>%
+    left_join(mid03, by = "id_mid") %>%
+    relocate(id_mid, player_team)
+)
+toc()
+beepr::beep(1)
+```
 
-# tic("Time needed:") #~43 seconds
-# (
-#   mid05 <- mid04 %>%
-#     arrange(desc(sum_avgpoints)) %>%
-#     # filter(sum_price <= 43 & sum_price > 35) %>%
-#     # slice_head(n = 5) %>%
-#     left_join(mid03, by = "id_mid") %>%
-#     relocate(id_mid, player_team)
-# )
+```{r}
+# saveRDS(mid05,
+#         file = "26_mid05.rds")
+
+# tic("Time needed:") #
+# mid05 <- readRDS("26_mid05.rds")
 # toc()
-# beepr::beep(1)
-# 
-# saveRDS(mid05, "mid05.rds")
-
-(mid05u39 <- mid05 %>% 
-  arrange(desc(sum_avgpoints)) %>%
-  filter(sum_price < 39 & sum_price > 30) %>%
-  slice_head(n = 25))
 ```
 
 ...it's going to be easier to plot the data.
 
 ```{r mid_plot}
 (
-  mid_plot01 <- mid05u39 %>%
+  mid_plot01 <- mid05 %>%
     select(
       id_mid,
       sum_price,
@@ -1248,7 +1347,7 @@ mid05 <- readRDS("mid05.rds")
 Which MID team?
 
 ```{r mid_choice}
-mid_team <- "599531"
+mid_team <- "1645061"
 
 (mid_choice <-
     mid05 %>% filter(id_mid == mid_team) %>% mutate("position" = "MID"))
@@ -1313,7 +1412,7 @@ fwd01 <- db07 %>% filter(position_name %in% "Forward") %>%
 
 choose(n = fwd01 %>% summarise(n = n()) %>% as.numeric(), k = 3)
 
-tic("Time needed:")
+tic("Time needed:") #0.023 sec elapsed
 fwd02 <- t(combn(fwd01$player_team, 3)) #max: 3 players
 toc()
 beepr::beep(sound = 1)
@@ -1322,7 +1421,7 @@ beepr::beep(sound = 1)
 ...then combine with their statistics.
 
 ```{r fwd03}
-tic("Time needed:")
+tic("Time needed:") #0.105 sec elapsed
 (
   fwd03 <- fwd02 %>%
     # na.omit() %>%
@@ -1344,17 +1443,13 @@ beepr::beep(sound = 1)
 ...aggregate statistics for each group.
 
 ```{r fwd04}
-# fwd04 <- readRDS("fwd04.rds")
-
-tic("Time needed:") #~48 menit
+tic("Time needed:") #0.284 sec elapsed
 
 (
   fwd04 <- fwd03 %>%
     group_by(id_fwd) %>%
-    # filter(any(player_team %in% c("Haaland | MCI"))) %>%
-    # filter(any(player_team %in% c("Jesus | ARS", "Haaland | MCI", "Richarlison | TOT"))) %>%
-    filter(any(player_team %in% c("Jesus | ARS"))) %>%  
-    filter(any(player_team %in% c("Richarlison | TOT"))) %>% 
+    # filter(any(player_team %in% c("Haaland | MCI"))) %>%  
+    filter(any(player_team %in% c("Jesus | ARS"))) %>% 
     summarise(
       sum_price = sum(now_cost, na.rm = FALSE),
       #sum, because we have maximal budget
@@ -1373,16 +1468,16 @@ tic("Time needed:") #~48 menit
     ungroup()
 )
 
-saveRDS(fwd04, "fwd04.rds")
+# saveRDS(fwd04, "28_fwd04.rds")
 toc()
 beepr::beep(1)
 
 ```
 
-Let's say the budget for the forwards is 20.
+Let's say the budget for the forwards is 21.
 
 ```{r fwd05}
-tic("Time needed:") #~14 menit
+tic("Time needed:") #0.04 sec elapsed
 (
   fwd05 <- fwd04 %>%
     arrange(desc(sum_avgpoints)) %>%
@@ -1394,7 +1489,8 @@ tic("Time needed:") #~14 menit
 toc()
 beepr::beep(1)
 
-# saveRDS(fwd05, "fwd05_salah.rds")
+# saveRDS(fwd05, "29_fwd05.rds")
+# fwd05 <- readRDS("~/OneDrive - The University of Nottingham/BB_SideProject/BelutListrik/29_fwd05.rds")
 ```
 
 ...it's going to be easier to plot the data.
@@ -1445,7 +1541,7 @@ beepr::beep(1)
 Which FWD team?
 
 ```{r fwd_choice}
-fwd_team <- "8525"
+fwd_team <- "12585"
 
 (fwd_choice <-
     fwd05 %>% filter(id_fwd == fwd_team) %>% mutate("position" = "FWD"))
@@ -1574,13 +1670,17 @@ Finding the most ideal formation by taking a look at the best first-10 in each i
 ...then we need to decide who are the main players. Look the order from top to bottom in `belutlistrik_squad`.
 
 ```{r bloptions}
-(belutlistrik_options <- belutlistrik_squad %>% 
-   mutate(
-     "form352" = ifelse(formid %in% c(2, 6, 7, 15), "bench", "play"),
-     "form442" = ifelse(formid %in% c(2, 7, 12, 15), "bench", "play"),
-     "form343" = ifelse(formid %in% c(2, 6, 7, 12), "bench", "play")
-   ) %>% 
-   relocate(id, formid, form442, form343, form352, player_team) 
+(
+  belutlistrik_options <- belutlistrik_squad %>%
+    mutate(
+      "form352" = ifelse(formid %in% c(2, 6, 7, 15), "bench", "play"),
+      "form442" = ifelse(formid %in% c(2, 7, 12, 15), "bench", "play"),
+      "form343" = ifelse(formid %in% c(2, 6, 7, 12), "bench", "play"),
+      "form451" = ifelse(formid %in% c(2, 7, 14, 15), "bench", "play"),
+    ) %>%
+    relocate(
+      id, formid, form442, form343, form352, form451, player_team
+    )
 )
 ```
 
@@ -1604,6 +1704,12 @@ Building the formations based on the coordinate of x and y in the plot.
   y = c(50, 110, 25, 50, 75, 110, 110, 20, 40, 60, 80, 110, 25, 50, 75),
   formid = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)
 ))
+
+(for451 <- tibble(
+  x = c(98, 98, 83, 83, 83, 83, 89, 68, 68, 68, 68, 68, 53, 80, 71),
+  y = c(50, 110, 20, 40, 60, 80, 110, 10, 30, 50, 70, 90, 50, 110, 110),
+  formid = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)
+))
 ```
 
 ... assigning the choosen players to the formation.
@@ -1620,22 +1726,34 @@ Building the formations based on the coordinate of x and y in the plot.
     select(formid, form343, player_team) %>%
     right_join(for343, by = "formid")
 )
+
+(
+  belutlistrik_352 <- belutlistrik_options %>%
+    select(formid, form352, player_team) %>%
+    right_join(for352, by = "formid")
+)
+
+(
+  belutlistrik_451 <- belutlistrik_options %>%
+    select(formid, form451, player_team) %>%
+    right_join(for451, by = "formid")
+)
 ```
 
 Plotting the final formation.
 
 ```{r blfinal}
 (
-  belutlistrik <- ggplot(belutlistrik_442) + #change
+  belutlistrik <- ggplot(belutlistrik_451) + #change
     annotate_pitch(
       colour = "white",
       fill   = "#e0e2db",
       limits = FALSE
     ) +
     geom_point(
-      aes(x = x, y = 100 - y, fill = factor(form442)), #change
+      aes(x = x, y = 100 - y, fill = factor(form451)), #change
       shape = 21,
-      size = 5
+      size = 8
     ) +
     scale_fill_manual(values = c("play" = "#8b2635", "bench" = "#2e3532")) +
     geom_text_repel(
@@ -1644,7 +1762,7 @@ Plotting the final formation.
         y = 100 - y,
         #label = stringr::str_wrap(player_team, 10),
         label = player_team,
-        color = factor(form442) #change
+        color = factor(form451) #change
       ),
       direction = "y",
       nudge_x = -4,
@@ -1674,6 +1792,6 @@ Plotting the final formation.
 
 ```{r clearing}
 # Removes all items in Environment!
-rm(list = ls())
-ls()
+# rm(list = ls())
+# ls()
 ```
