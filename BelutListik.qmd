@@ -11,8 +11,8 @@ This initial step covers clearing the environment, installing/loading related li
 
 ```{r pre-requisites}
 # Remove all items in Environment!
-rm(list = ls())
-ls()
+# rm(list = ls())
+# ls()
 
 pacman::p_load(tidyverse,
                stats,
@@ -314,7 +314,7 @@ By exploring the JSON data set, we can obtain the prices.
            now_cost,
            team,
            team_code,
-           #id,
+           # id,
            element_type,          
            # points_per_game,
            # selected_by_percent,total_points,
@@ -439,25 +439,25 @@ db03 <-
 ```
 
 ```{r db02_vs_db04}
-(
-  db02_db04 <- db02 %>%
-    anti_join(db04, by = c("full_name")) %>%
-    left_join(dict06, by = c("full_name" = "name")) %>%
-    select(-Understat_ID,-web_name, -singular_name_short) %>%
-    mutate(name = ifelse(Understat_Name == "", "", full_name)) %>%
-    relocate(
-      "full_name",
-      "team_name",
-      "team_strength",
-      "position_name",
-      "now_cost",
-      "short_name",
-      "name",
-      "position",
-      "FPL_ID",
-      "Understat_Name"
-    )
-)
+# (
+#   db02_db04 <- db02 %>%
+#     anti_join(db04, by = c("full_name")) %>%
+#     left_join(dict06, by = c("full_name" = "name")) %>%
+#     select(-Understat_ID,-web_name, -singular_name_short) %>%
+#     mutate(name = ifelse(Understat_Name == "", "", full_name)) %>%
+#     relocate(
+#       "full_name",
+#       "team_name",
+#       "team_strength",
+#       "position_name",
+#       "now_cost",
+#       "short_name",
+#       "name",
+#       "position",
+#       "FPL_ID",
+#       "Understat_Name"
+#     )
+# )
 
 ## With index
 # xlsx::write.xlsx(db02_db04, file = "20220715_matching.xlsx", sheetName = "new",
@@ -475,10 +475,12 @@ db03 <-
 # )
 ```
 
-```{r db04_after}
-db03 <- "~/OneDrive - The University of Nottingham/BB_SideProject/BelutListrik/idlist2223.csv"
+Check if there are duplicates players (i.e., similar players but with different positions).
 
-(db04 <- read_csv(db03, show_col_types = FALSE))
+```{r db04_after}
+# db03 <- "~/OneDrive - The University of Nottingham/BB_SideProject/BelutListrik/idlist2223.csv"
+# 
+# (db04 <- read_csv(db03, show_col_types = FALSE))
 
 # (
 #   db04 <- db02 %>%
@@ -806,7 +808,7 @@ toc()
 beepr::beep(sound = 1)
 ```
 
-Let's say the budget for the goalkeeper position is 9
+Let's say the budget for the goalkeeper position is £9.0.
 
 ```{r gk05}
 tic("Time needed:") #0.028 sec elapsed
@@ -992,7 +994,8 @@ tic("Time needed:") # 306.567 sec elapsed
   def04 <- def03 %>%
     group_by(id_def) %>%
     filter(any(
-      player_team %in% c("N.Williams | NFO") # separated 56 sec, combine 94 sec
+      player_team %in% c("N.Williams | NFO") 
+      # I want him in my squad, use "any!()" if you want any particular not included in your squad
     )) %>%
     summarise(
       sum_price = sum(now_cost),
@@ -1019,9 +1022,9 @@ beepr::beep(1)
 # save(def04,
 #      file = "21_def04.rdata")
 
-tic("Time needed:") #0.318 sec elapsed
-load("~/OneDrive - The University of Nottingham/BB_SideProject/BelutListrik/21_def04.rdata")
-toc()
+# tic("Time needed:") #0.318 sec elapsed
+# load("~/OneDrive - The University of Nottingham/BB_SideProject/BelutListrik/21_def04.rdata")
+# toc()
 
 # saveRDS(def04,
 #         file = "21_def04.rds")
@@ -1053,9 +1056,9 @@ beepr::beep(sound = 1)
 # saveRDS(def05,
 #         file = "22_def05.rds")
 
-tic("Time needed:")
-def05 <- readRDS("/~/OneDrive - The University of Nottingham/BB_SideProject/BelutListrik/22_def05.rds")
-toc()
+# tic("Time needed:")
+# def05 <- readRDS("/~/OneDrive - The University of Nottingham/BB_SideProject/BelutListrik/22_def05.rds")
+# toc()
 ```
 
 ...it's going to be easier to plot the data.
@@ -1122,7 +1125,7 @@ def_team <- "434"
     def05 %>% filter(id_def == def_team) %>% mutate("position" = "DEF"))
 ```
 
-Take a loot at the player's statistics individually.
+Take a look at the player's statistics individually. In addition, it turns out, £31.5 is enough. Our budget was £35.0. We will add £3.5 to the midfielders' budget. So the budget for midfielders will be £38.5, instead of £35.0.
 
 ```{r def_indv_stat}
 (
@@ -1174,8 +1177,8 @@ set.seed(19) #random number
 mid01 <- db07 %>% filter(position_name %in% "Midfielder") %>%
   arrange(desc(now_cost))
 
-mid_high <- mid01 %>% slice_head(prop = 0.20)
-mid_low <- mid01 %>% slice_tail(prop = 0.20)
+mid_high <- mid01 %>% slice_head(prop = 0.25)
+mid_low <- mid01 %>% slice_tail(prop = 0.15)
 mid_comb <- mid_high %>%
   bind_rows(mid_low)
 
@@ -1191,15 +1194,15 @@ beepr::beep(sound = 1)
 # save(mid02,
 #      file = "23_mid02.rdata")
 
-tic("Time needed:") # 49.442 sec elapsed
-load("~/OneDrive - The University of Nottingham/BB_SideProject/BelutListrik/23_mid02.rdata")
-toc()
+# tic("Time needed:") # 49.442 sec elapsed
+# load("~/OneDrive - The University of Nottingham/BB_SideProject/BelutListrik/23_mid02.rdata")
+# toc()
 ```
 
 ...then combine with their statistics.
 
 ```{r mid03}
-tic("Time needed:") # 196.508 sec elapsed
+tic("Time needed:") # 223.617 sec elapsed
 (
   mid03 <- mid02 %>%
     # na.omit() %>%
@@ -1222,9 +1225,9 @@ beepr::beep(sound = 1)
 # save(mid03,
 #      file = "24_mid03.rdata")
 
-tic("Time needed:") # 471.272 sec elapsed
-load("~/OneDrive - The University of Nottingham/BB_SideProject/BelutListrik/24_mid03.rdata")
-toc()
+# tic("Time needed:") # 471.272 sec elapsed
+# load("~/OneDrive - The University of Nottingham/BB_SideProject/BelutListrik/24_mid03.rdata")
+# toc()
 
 # saveRDS(mid03,
 #         file = "24_mid03.rds")
@@ -1263,13 +1266,79 @@ toc()
 beepr::beep(1)
 ```
 
+```{r mid04}
+# tic("Time needed:") #
+# 
+# (
+#   mid04_kulu <- mid03 %>%
+#     group_by(id_mid) %>%
+#     filter(any(player_team %in% c("Salah | LIV"))) %>%
+#     filter(any(player_team %in% c("Kulusevski | TOT"))) %>%
+#     filter(!any(player_team %in% c("Raphinha | LEE"))) %>%
+#     summarise(
+#       sum_price = sum(now_cost, na.rm = FALSE),
+#       #sum, because we have maximal budget
+#       sum_avgpoints = sum(avg_points, na.rm = FALSE),
+#       #sum, because we can pick 5 players
+#       avg_avgminutes = mean(avg_minutes, na.rm = FALSE),
+#       avg_avgict = mean(avg_ict, na.rm = FALSE),
+#       avg_avginfluence = mean(avg_influence, na.rm = FALSE),
+#       avg_avgXG = mean(avg_xG, na.rm = FALSE),
+#       avg_avgxA = mean(avg_xA, na.rm = FALSE),
+#       avg_avgxGChain = mean(avg_xGChain, na.rm = FALSE),
+#       avg_diffopp = mean(diff_opponent, na.rm = FALSE),
+#     ) %>%
+#     arrange(desc(sum_avgpoints),
+#             sum_price) %>%
+#     ungroup()
+# )
+# 
+# toc()
+# beepr::beep(1)
+```
+
+```{r}
+# tic("Time needed:") #
+# 
+# (
+#   mid04_all <- mid03 %>%
+#     group_by(id_mid) %>%
+#     # filter(any(player_team %in% c("Salah | LIV"))) %>%
+#     # filter(any(player_team %in% c("Kulusevski | TOT"))) %>%
+#     filter(!any(player_team %in% c("Raphinha | LEE"))) %>%
+#     summarise(
+#       sum_price = sum(now_cost, na.rm = FALSE),
+#       #sum, because we have maximal budget
+#       sum_avgpoints = sum(avg_points, na.rm = FALSE),
+#       #sum, because we can pick 5 players
+#       avg_avgminutes = mean(avg_minutes, na.rm = FALSE),
+#       avg_avgict = mean(avg_ict, na.rm = FALSE),
+#       avg_avginfluence = mean(avg_influence, na.rm = FALSE),
+#       avg_avgXG = mean(avg_xG, na.rm = FALSE),
+#       avg_avgxA = mean(avg_xA, na.rm = FALSE),
+#       avg_avgxGChain = mean(avg_xGChain, na.rm = FALSE),
+#       avg_diffopp = mean(diff_opponent, na.rm = FALSE),
+#     ) %>%
+#     arrange(desc(sum_avgpoints),
+#             sum_price) %>%
+#     ungroup()
+# )
+# 
+# toc()
+# beepr::beep(1)
+```
+
+
 ```{r}
 # saveRDS(mid04,
 #         file = "25_mid04.rds")
 
-tic("Time needed:") # 0.508 sec elapsed
-mid04 <- readRDS("~/OneDrive - The University of Nottingham/BB_SideProject/BelutListrik/25_mid04.rds")
-toc()
+# saveRDS(mid04,
+#         file = "25_mid04_kulu.rds")
+
+# tic("Time needed:") # 0.508 sec elapsed
+# mid04 <- readRDS("~/OneDrive - The University of Nottingham/BB_SideProject/BelutListrik/25_mid04.rds")
+# toc()
 ```
 
 Let's say the budget for the midfielder position is £38.5.
@@ -1347,7 +1416,7 @@ beepr::beep(1)
 Which MID team?
 
 ```{r mid_choice}
-mid_team <- "1645061"
+mid_team <- "753102"
 
 (mid_choice <-
     mid05 %>% filter(id_mid == mid_team) %>% mutate("position" = "MID"))
@@ -1448,7 +1517,7 @@ tic("Time needed:") #0.284 sec elapsed
 (
   fwd04 <- fwd03 %>%
     group_by(id_fwd) %>%
-    # filter(any(player_team %in% c("Haaland | MCI"))) %>%  
+    #filter(any(player_team %in% c("Haaland | MCI"))) %>%  
     filter(any(player_team %in% c("Jesus | ARS"))) %>% 
     summarise(
       sum_price = sum(now_cost, na.rm = FALSE),
@@ -1541,7 +1610,7 @@ beepr::beep(1)
 Which FWD team?
 
 ```{r fwd_choice}
-fwd_team <- "12585"
+fwd_team <- "12586"
 
 (fwd_choice <-
     fwd05 %>% filter(id_fwd == fwd_team) %>% mutate("position" = "FWD"))
@@ -1744,16 +1813,16 @@ Plotting the final formation.
 
 ```{r blfinal}
 (
-  belutlistrik <- ggplot(belutlistrik_451) + #change
+  belutlistrik <- ggplot(belutlistrik_442) + #change
     annotate_pitch(
       colour = "white",
       fill   = "#e0e2db",
       limits = FALSE
     ) +
     geom_point(
-      aes(x = x, y = 100 - y, fill = factor(form451)), #change
+      aes(x = x, y = 100 - y, fill = factor(form442)), #change
       shape = 21,
-      size = 8
+      size = 5
     ) +
     scale_fill_manual(values = c("play" = "#8b2635", "bench" = "#2e3532")) +
     geom_text_repel(
@@ -1762,7 +1831,7 @@ Plotting the final formation.
         y = 100 - y,
         #label = stringr::str_wrap(player_team, 10),
         label = player_team,
-        color = factor(form451) #change
+        color = factor(form442) #change
       ),
       direction = "y",
       nudge_x = -4,
