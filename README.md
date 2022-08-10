@@ -3,6 +3,7 @@ All files are intended to be used in R courses organised by the Ministry of Fina
 - The slide: https://arifpras.github.io/BelutListrik/ :white_check_mark:
 - The qmd format of the practice session: "BelutListrik.qmd" (note: could be opened using RStudio or Posit [starting from October 2022]) :white_check_mark:
 - The html format of the practice session: https://arifpras.github.io/AnalysingFPL/ :hourglass_flowing_sand:
+- The recording on YouTube: https://youtu.be/aBmEunQyIwU :white_check_mark:
 
 Topics covered in this session:
 - Web-scrapping
